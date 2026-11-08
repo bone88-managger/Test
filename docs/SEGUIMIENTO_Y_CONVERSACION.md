@@ -154,11 +154,31 @@ Commit de corrección: `339c1819188123993dc648fe75d16d2a673321c1`.
 
 Pendiente:
 - [ ] Confirmar que GitHub Actions compila correctamente esta corrección y publica un APK nuevo.
-- [ ] Instalar el APK corregido en el teléfono y verificar que el PDF muestra el indicador de carga sin pantalla negra.
-- [ ] Verificar que se puede desplazar desde la parte superior hasta todos los registros.
+- [x] ~~Instalar el APK corregido en el teléfono y verificar que el PDF muestra el indicador de carga sin pantalla negra.~~ — Completada: 2026-11-08 18:06:26 UTC-04:00
+- [x] ~~Verificar que se puede desplazar desde la parte superior hasta todos los registros.~~ — Completada: 2026-11-08 18:06:26 UTC-04:00
 - [ ] Confirmar que la importación conserva las generaciones anteriores y que la generación sigue funcionando después de la importación.
 
 No marcar estas pruebas como completadas hasta que el usuario pruebe el nuevo APK.
 
 ---
 Última actualización: 2026-11-08.
+
+## 10. Separación del historial de rechazos
+
+El usuario confirmó que las dos correcciones anteriores (lectura del PDF y desplazamiento) funcionan en su teléfono. Después indicó que el historial de rechazos hace demasiado larga la pantalla principal y precisó que se debe mover únicamente ese historial, dejando todo lo demás exactamente como está.
+
+Cambio realizado en `app/src/main/java/com/bone88/megamillions/MainActivity.kt`: 
+- Se añadió una pantalla independiente para consultar exclusivamente las generaciones rechazadas, con su combinación, número de intento, motivo y fecha/hora.
+- Se añadió en la pantalla principal el botón «Ver rechazos (N)» y un botón «VOLVER» en la pantalla de rechazos.
+- La pantalla principal conserva el resto de sus controles, avisos, importación, generación, resultado, combinaciones aceptadas y registros aceptados.
+- No se modificaron el generador, el filtro histórico, la persistencia ni los datos guardados. Los rechazos siguen almacenándose localmente; solo cambia dónde se muestran.
+
+Commit: `4d17ee3689a1bb7710f8d3de09e76db9f5bd365b`.
+
+Pendiente de verificación:
+- [ ] Confirmar que GitHub Actions compila este cambio y publica un APK nuevo.
+- [ ] Instalar y probar el APK: confirmar que la pantalla principal permanece igual salvo por el botón de rechazos.
+- [ ] Abrir «Ver rechazos», revisar la lista y volver a la pantalla principal.
+- [ ] Confirmar que todos los rechazos se conservan y que el historial aceptado sigue visible en la pantalla principal.
+
+Estas tareas no deben tacharse hasta verificar el APK en el teléfono.
