@@ -55,6 +55,10 @@ private const val MEGA_MIN = 1
 private const val MEGA_MAX = 24
 private const val MAX_ALLOWED_ATTEMPTS = 250_000
 
+internal fun isValidDrawNumbers(white: List<Int>, mega: Int): Boolean =
+    white.size == WHITE_COUNT && white.distinct().size == WHITE_COUNT &&
+        white.all { it in WHITE_MIN..WHITE_MAX } && mega in MEGA_MIN..MEGA_MAX
+
 private data class Draw(val date: String, val white: List<Int>, val mega: Int) {
     val values: Set<Int> get() = (white + mega).toSet()
     val key: String get() = white.sorted().joinToString(",") + "|" + mega
@@ -230,7 +234,7 @@ class MainActivity : ComponentActivity() {
             val nums = number.findAll(match.groupValues[2]).map { it.value.toInt() }.toList()
             if (nums.size < 6) return@forEach
             val white = nums.take(5).sorted()
-            if (white.distinct().size != 5 || (white + nums[5]).any { it !in 1..99 }) return@forEach
+            if (!isValidDrawNumbers(white, nums[5])) return@forEach
             val draw = Draw(match.groupValues[1], white, nums[5])
             rows[draw.date + "|" + draw.key] = draw
         }
@@ -249,7 +253,7 @@ class MainActivity : ComponentActivity() {
             try {
                 val white = (1..5).map { cells[indexes[it]].toInt() }
                 val mega = cells[indexes[6]].toInt()
-                if (white.distinct().size != 5 || (white + mega).any { it !in 1..99 }) null
+                if (!isValidDrawNumbers(white, mega)) null
                 else Draw(cells[indexes[0]], white.sorted(), mega)
             } catch (_: Exception) {
                 throw IllegalArgumentException("Error en la fila CSV " + (index + 2) + ".")
