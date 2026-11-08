@@ -23,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -37,10 +38,80 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.security.SecureRandom
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private const val WHITE_MIN = 1
+private const val WHITE_MAX = 70
+private const val WHITE_COUNT = 5
+private const val MEGA_MIN = 1
+private const val MEGA_MAX = 24
+private const val MAX_ALLOWED_ATTEMPTS = 250_000
 
 private data class Draw(val date: String, val white: List<Int>, val mega: Int) {
     val values: Set<Int> get() = (white + mega).toSet()
-    val key: String get() = white.joinToString(",") + "|" + mega
+    val key: String get() = white.sorted().joinToString(",") + "|" + mega
+}
+
+private data class GenerationRecord(
+    val timestamp: Long,
+    val attempt: Int,
+    val white: List<Int>,
+    val mega: Int,
+    val accepted: Boolean,
+    val reason: String
+) {
+    val key: String get() = white.sorted().joinToString(",") + "|" + mega
+}
+
+private data class GenerationResult(
+    val candidate: Draw?,
+    val records: List<GenerationRecord>
+)
+
+internal object SecureLotteryRandom {
+    private val source = SecureRandom()
+    private const val UINT32_RANGE = 4_294_967_296L
+    private const val UINT32_MASK = 0xffff_ffffL
+
+    // Uniform bounded sampling: reject the incomplete tail of the 32-bit range.
+    internal fun nextInt(bound: Int, random: SecureRandom = source): Int {
+        require(bound > 0)
+        val limit = UINT32_RANGE - (UINT32_RANGE % bound.toLong())
+        while (true) {
+            val unsigned = random.nextInt().toLong() and UINT32_MASK
+            val mapped = mapUnsignedToBound(unsigned, bound, limit)
+            if (mapped != null) return mapped
+        }
+    }
+
+    internal fun mapUnsignedToBound(value: Long, bound: Int): Int? {
+        require(bound > 0)
+        require(value in 0 until UINT32_RANGE)
+        val limit = UINT32_RANGE - (UINT32_RANGE % bound.toLong())
+        return mapUnsignedToBound(value, bound, limit)
+    }
+
+    private fun mapUnsignedToBound(value: Long, bound: Int, limit: Long): Int? {
+        if (value >= limit) return null
+        return (value % bound.toLong()).toInt()
+    }
+
+    // Fisher-Yates selects five distinct values without replacement.
+    internal fun sampleWhite(random: SecureRandom = source): List<Int> {
+        val pool = (WHITE_MIN..WHITE_MAX).toMutableList()
+        for (index in pool.lastIndex downTo 1) {
+            val other = nextInt(index + 1, random)
+            val temp = pool[index]
+            pool[index] = pool[other]
+            pool[other] = temp
+        }
+        return pool.take(WHITE_COUNT).sorted()
+    }
+
+    internal fun sampleMega(random: SecureRandom = source): Int =
+        MEGA_MIN + nextInt(MEGA_MAX - MEGA_MIN + 1, random)
 }
 
 class MainActivity : ComponentActivity() {
@@ -54,9 +125,11 @@ class MainActivity : ComponentActivity() {
                 SimulatorScreen(
                     initialHistory = readDraws("history"),
                     initialGenerated = readDraws("generated"),
-                    onSave = { history, generated ->
+                    initialLog = readGenerationLog(),
+                    onSave = { history, generated, log ->
                         saveDraws("history", history)
                         saveDraws("generated", generated)
+                        saveGenerationLog(log)
                     },
                     onImport = { uri -> importHistory(uri) }
                 )
@@ -86,20 +159,58 @@ class MainActivity : ComponentActivity() {
         prefs.edit().putString(key, array.toString()).apply()
     }
 
+    private fun readGenerationLog(): List<GenerationRecord> {
+        return try {
+            val raw = openFileInput("generation_log.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val array = JSONArray(raw)
+            (0 until array.length()).map { index ->
+                val item = array.getJSONObject(index)
+                val numbers = item.getJSONArray("white")
+                GenerationRecord(
+                    timestamp = item.getLong("timestamp"),
+                    attempt = item.getInt("attempt"),
+                    white = (0 until numbers.length()).map { numbers.getInt(it) },
+                    mega = item.getInt("mega"),
+                    accepted = item.getBoolean("accepted"),
+                    reason = item.getString("reason")
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveGenerationLog(records: List<GenerationRecord>) {
+        val array = JSONArray()
+        records.forEach { record ->
+            val whites = JSONArray()
+            record.white.forEach { whites.put(it) }
+            array.put(
+                JSONObject()
+                    .put("timestamp", record.timestamp)
+                    .put("attempt", record.attempt)
+                    .put("white", whites)
+                    .put("mega", record.mega)
+                    .put("accepted", record.accepted)
+                    .put("reason", record.reason)
+            )
+        }
+        openFileOutput("generation_log.json", MODE_PRIVATE).bufferedWriter(Charsets.UTF_8).use {
+            it.write(array.toString())
+        }
+    }
+
     private fun importHistory(uri: Uri): List<Draw> {
         val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
             ?: throw IllegalArgumentException("No se pudo abrir el archivo.")
         val mime = contentResolver.getType(uri).orEmpty()
-        val text = if (mime.contains("pdf") || uri.toString().lowercase().endsWith(".pdf")) {
+        val isPdf = mime.contains("pdf") || uri.toString().lowercase().endsWith(".pdf")
+        val text = if (isPdf) {
             PDDocument.load(ByteArrayInputStream(bytes)).use { PDFTextStripper().getText(it) }
         } else {
             bytes.toString(Charsets.UTF_8).removePrefix("\uFEFF")
         }
-        val parsed = if (mime.contains("pdf") || uri.toString().lowercase().endsWith(".pdf")) {
-            parsePdfText(text)
-        } else {
-            parseCsv(text)
-        }
+        val parsed = if (isPdf) parsePdfText(text) else parseCsv(text)
         require(parsed.isNotEmpty()) { "No encontré sorteos reconocibles en el archivo." }
         return parsed
     }
@@ -132,10 +243,10 @@ class MainActivity : ComponentActivity() {
             try {
                 val white = (1..5).map { cells[indexes[it]].toInt() }
                 val mega = cells[indexes[6]].toInt()
-                if (white.size != 5 || white.distinct().size != 5 || (white + mega).any { it !in 1..99 }) null
+                if (white.distinct().size != 5 || (white + mega).any { it !in 1..99 }) null
                 else Draw(cells[indexes[0]], white.sorted(), mega)
             } catch (_: Exception) {
-                throw IllegalArgumentException("Error en la fila CSV ${index + 2}.")
+                throw IllegalArgumentException("Error en la fila CSV " + (index + 2) + ".")
             }
         }
     }
@@ -145,23 +256,26 @@ class MainActivity : ComponentActivity() {
 private fun SimulatorScreen(
     initialHistory: List<Draw>,
     initialGenerated: List<Draw>,
-    onSave: (List<Draw>, List<Draw>) -> Unit,
+    initialLog: List<GenerationRecord>,
+    onSave: (List<Draw>, List<Draw>, List<GenerationRecord>) -> Unit,
     onImport: (Uri) -> List<Draw>
 ) {
     var history by remember { mutableStateOf(initialHistory) }
     var generated by remember { mutableStateOf(initialGenerated) }
+    var generationLog by remember { mutableStateOf(initialLog) }
     var latest by remember { mutableStateOf<Draw?>(null) }
+    var attemptLimit by remember { mutableStateOf("100000") }
     var message by remember { mutableStateOf(if (history.isEmpty()) "Importa el PDF histórico para comenzar." else "Historial listo.") }
     var error by remember { mutableStateOf(false) }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             try {
                 val rows = onImport(uri)
                 history = rows
-                generated = emptyList()
-                latest = null
-                onSave(history, generated)
-                message = "Se importaron ${rows.size} sorteos correctamente."
+                // Keep the permanent generated-combination registry and log when history is re-imported.
+                onSave(history, generated, generationLog)
+                message = "Se importaron " + rows.size + " sorteos correctamente. Las generaciones anteriores se conservaron."
                 error = false
             } catch (e: Exception) {
                 message = e.message ?: "No se pudo leer el archivo."
@@ -173,7 +287,7 @@ private fun SimulatorScreen(
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Mega Millions", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Simulador Android · historial histórico y filtros de coincidencia")
+            Text("Simulador Android · generación criptográfica y filtros históricos")
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.padding(14.dp)) {
                     Text("Aviso", fontWeight = FontWeight.Bold)
@@ -184,19 +298,37 @@ private fun SimulatorScreen(
                 OutlinedButton(onClick = { picker.launch(arrayOf("application/pdf", "text/*", "application/octet-stream")) }) {
                     Text("Cargar PDF / CSV")
                 }
-                Text("${history.size} sorteos", style = MaterialTheme.typography.labelLarge)
+                Text(history.size.toString() + " sorteos", style = MaterialTheme.typography.labelLarge)
             }
-            Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechazan combinaciones con más de 2 valores numéricos compartidos con cualquier fila histórica.")
+            Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechazan candidatos que compartan más de 2 valores numéricos con cualquier fila histórica.")
+            OutlinedTextField(
+                value = attemptLimit,
+                onValueChange = { value -> if (value.all { it.isDigit() }) attemptLimit = value },
+                label = { Text("Máximo de intentos (1–" + MAX_ALLOWED_ATTEMPTS + ")") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
             Button(
                 onClick = {
                     try {
                         require(history.isNotEmpty()) { "Primero carga el PDF histórico." }
-                        val candidate = generateCandidate(history + generated)
-                        generated = generated + candidate
-                        latest = candidate
-                        onSave(history, generated)
-                        message = "Combinación aceptada: cumple los filtros configurados."
-                        error = false
+                        val maxAttempts = attemptLimit.toIntOrNull()
+                            ?: throw IllegalArgumentException("Introduce un límite de intentos válido.")
+                        require(maxAttempts in 1..MAX_ALLOWED_ATTEMPTS) {
+                            "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
+                        }
+                        val result = generateCandidate(history, generated, maxAttempts)
+                        generationLog = generationLog + result.records
+                        if (result.candidate != null) {
+                            generated = generated + result.candidate
+                            latest = result.candidate
+                            message = "Combinación aceptada en " + result.records.size + " intento(s)."
+                            error = false
+                        } else {
+                            message = "No se encontró una combinación válida tras " + maxAttempts + " intentos. Se registraron todos los rechazos."
+                            error = true
+                        }
+                        onSave(history, generated, generationLog)
                     } catch (e: Exception) {
                         message = e.message ?: "No se pudo generar."
                         error = true
@@ -220,14 +352,30 @@ private fun SimulatorScreen(
             }
             Text(message, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             Divider()
-            Text("Combinaciones generadas en este dispositivo: ${generated.size}", fontWeight = FontWeight.SemiBold)
+            Text("Combinaciones aceptadas y protegidas contra duplicados: " + generated.size, fontWeight = FontWeight.SemiBold)
+            Text("Registro de intentos: " + generationLog.size + " · se conserva en este dispositivo.")
             LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(generated.asReversed()) { draw ->
-                    Text("${draw.white.joinToString(" · ")}  |  Mega Ball: ${draw.mega}")
+                items(generationLog.asReversed()) { record ->
+                    Card {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(
+                                (if (record.accepted) "ACEPTADA" else "RECHAZADA") +
+                                    " · Intento " + record.attempt,
+                                color = if (record.accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(record.white.joinToString(" · ") + " | Mega Ball: " + record.mega)
+                            Text(record.reason, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(record.timestamp)),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(4.dp))
-            Text("La app guarda el historial y las combinaciones localmente en este teléfono.")
+            Text("El historial oficial, las combinaciones aceptadas y el registro se guardan localmente.")
         }
     }
 }
@@ -244,19 +392,42 @@ private fun NumberBall(value: String, mega: Boolean = false) {
     }
 }
 
-private fun generateCandidate(history: List<Draw>): Draw {
-    val random = SecureRandom()
-    val existing = history.map { it.key }.toSet()
-    repeat(1_000_000) {
-        val whiteSet = linkedSetOf<Int>()
-        while (whiteSet.size < 5) whiteSet.add(random.nextInt(70) + 1)
-        val white = whiteSet.sorted()
-        val mega = random.nextInt(24) + 1
+private fun generateCandidate(
+    history: List<Draw>,
+    generated: List<Draw>,
+    maxAttempts: Int
+): GenerationResult {
+    val knownKeys = (history + generated).map { it.key }.toHashSet()
+    val records = mutableListOf<GenerationRecord>()
+
+    for (attempt in 1..maxAttempts) {
+        val white = SecureLotteryRandom.sampleWhite()
+        val mega = SecureLotteryRandom.sampleMega()
         val candidate = Draw("SIMULADO", white, mega)
-        if (candidate.key in existing) return@repeat
-        val candidateValues = candidate.values
-        val allowed = history.none { old -> candidateValues.intersect(old.values).size > 2 }
-        if (allowed) return candidate
+
+        val duplicate = candidate.key in knownKeys
+        val conflictingDraw = if (duplicate) null else history.firstOrNull { old ->
+            candidate.values.intersect(old.values).size > 2
+        }
+
+        val accepted = !duplicate && conflictingDraw == null
+        val reason = when {
+            duplicate -> "Combinación completa ya registrada anteriormente."
+            conflictingDraw != null -> "Supera 2 coincidencias numéricas con el sorteo " + conflictingDraw.date + "."
+            else -> "Aceptada: cumple las reglas y no está duplicada."
+        }
+
+        records += GenerationRecord(
+            timestamp = System.currentTimeMillis(),
+            attempt = attempt,
+            white = white,
+            mega = mega,
+            accepted = accepted,
+            reason = reason
+        )
+
+        if (accepted) return GenerationResult(candidate, records)
     }
-    error("No se encontró combinación válida tras 1.000.000 de intentos. El filtro puede ser demasiado estricto.")
+
+    return GenerationResult(null, records)
 }
