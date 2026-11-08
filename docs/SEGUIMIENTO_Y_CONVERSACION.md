@@ -2,7 +2,7 @@
 
 > Documento de continuidad del proyecto. Leer antes de continuar el trabajo en otro chat.
 >
-> **Regla de mantenimiento:** no borrar tareas ni decisiones anteriores. Cuando una tarea quede terminada y verificada, tachar su texto con Markdown (\`~~tarea~~\`) y conservarla en su sección. Añadir nuevas tareas sin reemplazar el historial. No marcar como terminada una compilación o prueba hasta comprobar su resultado.
+> **Regla de mantenimiento:** no borrar tareas ni decisiones anteriores. Cuando una tarea quede terminada y verificada, tachar su texto con Markdown (\`~~tarea~~\`), conservarla en su sección y añadir inmediatamente la fecha y hora local de finalización, incluyendo la zona horaria (formato recomendado: \`— Completada: AAAA-MM-DD HH:MM UTC±HH:MM\`). Usar la hora real de verificación, no una hora estimada. Añadir nuevas tareas sin reemplazar el historial. No marcar como terminada una compilación o prueba hasta comprobar su resultado.
 
 ## 1. Identidad y objetivo del proyecto
 
@@ -71,6 +71,7 @@ Este registro resume las decisiones visibles y los antecedentes conservados en e
 17. Rechazó, por ahora, el panel separado de estadísticas internas (punto 15).
 18. Solicitó implementar los diez requisitos aprobados y dejar fuera los demás.
 19. Solicitó crear este documento de continuidad dentro del proyecto para retomar el trabajo desde otro chat y mantener las tareas completadas tachadas, no borradas.
+20. Solicitó que cada tarea tachada incluya también la fecha y hora en que fue completada; se estableció registrar la hora local con su zona horaria.
 
 ## 5. Cambios de implementación reportados en GitHub
 
@@ -106,7 +107,7 @@ Cambios descritos:
 - [ ] Confirmar que el límite de intentos nunca permite aceptar una combinación que incumpla un filtro.
 - [ ] Verificar que el workflow Android APK termina con éxito y publica el artefacto APK.
 - [ ] Instalar y probar el APK en el teléfono Android del usuario.
-- [ ] Solo después de todas las verificaciones, tachar las tareas terminadas con \`~~texto~~\`, conservándolas en esta lista.
+- [ ] Al completar cada tarea y verificarla, tachar su texto y añadir en la misma línea la fecha y hora local exactas de finalización con zona horaria; conservar la tarea en esta lista.
 
 ### Fuera de alcance por decisión del usuario
 
@@ -131,7 +132,7 @@ Comprobar de nuevo el estado de GitHub Actions antes de afirmar que la compilaci
 2. Revisar también \`README.md\`, \`ANDROID.md\`, el código Kotlin, las pruebas y el workflow.
 3. Consultar el estado real de la rama y GitHub Actions; no confiar ciegamente en estados antiguos de este documento.
 4. Continuar desde la primera tarea pendiente.
-5. Al completar y verificar una tarea, tacharla con Markdown; no eliminarla ni borrar decisiones anteriores.
+5. Al completar y verificar una tarea, tacharla con Markdown y añadir en esa misma línea la fecha y hora local exactas de finalización, incluyendo la zona horaria; no eliminarla ni borrar decisiones anteriores.
 6. No agregar funciones nuevas sin explicarlas al usuario y recibir su aprobación.
 
 ---
