@@ -12,8 +12,8 @@ android {
         applicationId = "com.bone88.megamillions"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     buildFeatures { compose = true }
@@ -32,5 +32,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    testImplementation("junit:junit:4.13.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
