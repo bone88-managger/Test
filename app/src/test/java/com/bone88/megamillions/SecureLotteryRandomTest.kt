@@ -10,6 +10,14 @@ import java.security.SecureRandom
 
 class SecureLotteryRandomTest {
     @Test
+    fun importedDrawsMustUseOfficialMegaMillionsRanges() {
+        assertTrue(isValidDrawNumbers(listOf(1, 2, 3, 4, 70), 24))
+        assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4, 71), 12))
+        assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4, 5), 25))
+        assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4, 4), 12))
+        assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4), 12))
+    }
+    @Test
     fun boundedSamplerRejectsIncompleteTail() {
         // For bound 3, 2^32 - 1 is the first value outside the divisible range.
         assertNull(SecureLotteryRandom.mapUnsignedToBound(4_294_967_295L, 3))
