@@ -176,9 +176,11 @@ Cambio realizado en `app/src/main/java/com/bone88/megamillions/MainActivity.kt`:
 Commit: `4d17ee3689a1bb7710f8d3de09e76db9f5bd365b`.
 
 Pendiente de verificación:
-- [ ] Confirmar que GitHub Actions compila este cambio y publica un APK nuevo.
-- [ ] Instalar y probar el APK: confirmar que la pantalla principal permanece igual salvo por el botón de rechazos.
-- [ ] Abrir «Ver rechazos», revisar la lista y volver a la pantalla principal.
-- [ ] Confirmar que todos los rechazos se conservan y que el historial aceptado sigue visible en la pantalla principal.
+- [x] ~~Confirmar que GitHub Actions compila este cambio y publica un APK nuevo.~~ — Completada: 2026-11-08 18:24:21 UTC-04:00
+- [x] ~~Instalar y probar el APK: confirmar que la pantalla principal permanece igual salvo por el botón de rechazos.~~ — Completada: 2026-11-08 18:24:21 UTC-04:00
+- [x] ~~Abrir «Ver rechazos», revisar la lista y volver a la pantalla principal.~~ — Completada: 2026-11-08 18:24:21 UTC-04:00
+- [x] ~~Confirmar que todos los rechazos se conservan y que el historial aceptado sigue visible en la pantalla principal.~~ — Completada: 2026-11-08 18:24:21 UTC-04:00
 
-Estas tareas no deben tacharse hasta verificar el APK en el teléfono.
+El usuario instaló el APK nuevo y confirmó que todo funciona correctamente. Las cuatro verificaciones anteriores quedan completadas según esa confirmación.
+
+Actualización de verificación del usuario: 2026-11-08 18:24:21 UTC-04:00. El usuario confirmó: «Ya la instale y todo funciona bien, ya podemos continuar».
