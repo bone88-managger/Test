@@ -184,3 +184,24 @@ Pendiente de verificación:
 El usuario instaló el APK nuevo y confirmó que todo funciona correctamente. Las cuatro verificaciones anteriores quedan completadas según esa confirmación.
 
 Actualización de verificación del usuario: 2026-11-08 18:24:21 UTC-04:00. El usuario confirmó: «Ya la instale y todo funciona bien, ya podemos continuar».
+
+
+## 11. Validación de rangos al importar el historial
+
+Durante la revisión del código se detectó que los lectores PDF y CSV aceptaban valores de hasta 99, en lugar de aplicar los rangos oficiales de Mega Millions. Eso podía introducir sorteos inválidos en el historial y afectar el filtro.
+
+Corrección realizada:
+- Se añadió una validación común: exactamente cinco bolas blancas distintas entre 1 y 70, y Mega Ball entre 1 y 24.
+- Se aplicó la validación tanto a la lectura PDF como CSV.
+- Se añadieron pruebas unitarias para límites válidos, números fuera de rango, bolas blancas duplicadas y cantidad incorrecta de bolas.
+- No se cambiaron el generador aleatorio, el criterio de coincidencias históricas ni la lógica de aceptación/rechazo.
+
+Commits:
+- Código: `e4d342da40e49af07d3d050c00bd3753d05e7cca`
+- Pruebas: `372c25b76c87abf05c3a5377aa941c065327cd5e`
+
+Pendiente:
+- [ ] Confirmar que las pruebas Android pasan con la nueva validación.
+- [ ] Confirmar que el workflow Android APK compila y publica el APK.
+- [ ] Instalar esta versión en el teléfono y probar la importación de PDF/CSV.
+- [ ] Continuar la auditoría de filtro histórico, duplicados permanentes, límite de intentos y persistencia del registro.
