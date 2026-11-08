@@ -12,7 +12,11 @@ def test_load_csv():
     assert len(rows) == 1
     assert rows[0].white == (1, 2, 3, 4, 5)
 
-def test_overlap_counts_numeric_values_not_positions():
+def test_historical_eras_can_keep_values_above_current_ranges():
+    old = Draw("2014-12-16", (41, 58, 68, 72, 73), 1)
+    assert old.white[-1] == 73
+
+def test_overlap_counts_unique_numeric_values_not_positions():
     assert overlap_count([1, 2, 3, 4, 5, 6], [1, 2, 8, 9, 10, 6]) == 3
 
 def test_valid_candidate_at_most_two_shared_values():
