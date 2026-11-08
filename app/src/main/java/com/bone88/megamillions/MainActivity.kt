@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -27,6 +29,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -267,115 +273,152 @@ private fun SimulatorScreen(
     var attemptLimit by remember { mutableStateOf("100000") }
     var message by remember { mutableStateOf(if (history.isEmpty()) "Importa el PDF histórico para comenzar." else "Historial listo.") }
     var error by remember { mutableStateOf(false) }
+    var isImporting by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            try {
-                val rows = onImport(uri)
-                history = rows
-                // Keep the permanent generated-combination registry and log when history is re-imported.
-                onSave(history, generated, generationLog)
-                message = "Se importaron " + rows.size + " sorteos correctamente. Las generaciones anteriores se conservaron."
+        if (uri != null && !isImporting) {
+            scope.launch {
+                isImporting = true
+                message = "Leyendo el archivo. Puedes esperar aquí..."
                 error = false
-            } catch (e: Exception) {
-                message = e.message ?: "No se pudo leer el archivo."
-                error = true
+                try {
+                    // PDF parsing and file reading run off the UI thread to prevent a frozen/black screen.
+                    val rows = withContext(Dispatchers.IO) { onImport(uri) }
+                    history = rows
+                    // Keep the permanent generated-combination registry and log when history is re-imported.
+                    onSave(history, generated, generationLog)
+                    message = "Se importaron " + rows.size + " sorteos correctamente. Las generaciones anteriores se conservaron."
+                } catch (e: Exception) {
+                    message = e.message ?: "No se pudo leer el archivo."
+                    error = true
+                } finally {
+                    isImporting = false
+                }
             }
         }
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Mega Millions", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Simulador Android · generación criptográfica y filtros históricos")
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-                Column(Modifier.padding(14.dp)) {
-                    Text("Aviso", fontWeight = FontWeight.Bold)
-                    Text("No predice sorteos ni puede garantizar que nadie gane. Los filtros solo limitan las combinaciones que acepta esta app.")
+        // One scrolling list for the entire screen avoids nesting a LazyColumn inside a Column.
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Text("Mega Millions", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            }
+            item { Text("Simulador Android · generación criptográfica y filtros históricos") }
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text("Aviso", fontWeight = FontWeight.Bold)
+                        Text("No predice sorteos ni puede garantizar que nadie gane. Los filtros solo limitan las combinaciones que acepta esta app.")
+                    }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { picker.launch(arrayOf("application/pdf", "text/*", "application/octet-stream")) }) {
-                    Text("Cargar PDF / CSV")
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                        onClick = { picker.launch(arrayOf("application/pdf", "text/*", "application/octet-stream")) },
+                        enabled = !isImporting
+                    ) {
+                        Text("Cargar PDF / CSV")
+                    }
+                    Text(history.size.toString() + " sorteos", style = MaterialTheme.typography.labelLarge)
                 }
-                Text(history.size.toString() + " sorteos", style = MaterialTheme.typography.labelLarge)
             }
-            Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechazan candidatos que compartan más de 2 valores numéricos con cualquier fila histórica.")
-            OutlinedTextField(
-                value = attemptLimit,
-                onValueChange = { value -> if (value.all { it.isDigit() }) attemptLimit = value },
-                label = { Text("Máximo de intentos (1–" + MAX_ALLOWED_ATTEMPTS + ")") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = {
-                    try {
-                        require(history.isNotEmpty()) { "Primero carga el PDF histórico." }
-                        val maxAttempts = attemptLimit.toIntOrNull()
-                            ?: throw IllegalArgumentException("Introduce un límite de intentos válido.")
-                        require(maxAttempts in 1..MAX_ALLOWED_ATTEMPTS) {
-                            "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
-                        }
-                        val result = generateCandidate(history, generated, maxAttempts)
-                        generationLog = generationLog + result.records
-                        if (result.candidate != null) {
-                            generated = generated + result.candidate
-                            latest = result.candidate
-                            message = "Combinación aceptada en " + result.records.size + " intento(s)."
-                            error = false
-                        } else {
-                            message = "No se encontró una combinación válida tras " + maxAttempts + " intentos. Se registraron todos los rechazos."
+            if (isImporting) {
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator()
+                        Text("Cargando y leyendo el PDF...")
+                    }
+                }
+            }
+            item {
+                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechazan candidatos que compartan más de 2 valores numéricos con cualquier fila histórica.")
+            }
+            item {
+                OutlinedTextField(
+                    value = attemptLimit,
+                    onValueChange = { value -> if (value.all { it.isDigit() }) attemptLimit = value },
+                    label = { Text("Máximo de intentos (1–" + MAX_ALLOWED_ATTEMPTS + ")") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                Button(
+                    onClick = {
+                        try {
+                            require(history.isNotEmpty()) { "Primero carga el PDF histórico." }
+                            val maxAttempts = attemptLimit.toIntOrNull()
+                                ?: throw IllegalArgumentException("Introduce un límite de intentos válido.")
+                            require(maxAttempts in 1..MAX_ALLOWED_ATTEMPTS) {
+                                "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
+                            }
+                            val result = generateCandidate(history, generated, maxAttempts)
+                            generationLog = generationLog + result.records
+                            if (result.candidate != null) {
+                                generated = generated + result.candidate
+                                latest = result.candidate
+                                message = "Combinación aceptada en " + result.records.size + " intento(s)."
+                                error = false
+                            } else {
+                                message = "No se encontró una combinación válida tras " + maxAttempts + " intentos. Se registraron todos los rechazos."
+                                error = true
+                            }
+                            onSave(history, generated, generationLog)
+                        } catch (e: Exception) {
+                            message = e.message ?: "No se pudo generar."
                             error = true
                         }
-                        onSave(history, generated, generationLog)
-                    } catch (e: Exception) {
-                        message = e.message ?: "No se pudo generar."
-                        error = true
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = history.isNotEmpty()
-            ) { Text("GENERAR COMBINACIÓN") }
-
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = history.isNotEmpty() && !isImporting
+                ) { Text("GENERAR COMBINACIÓN") }
+            }
             latest?.let { draw ->
-                Card {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Tu combinación", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                            draw.white.forEach { NumberBall(it.toString()) }
-                            NumberBall(draw.mega.toString(), mega = true)
-                        }
-                        Text("Aleatoria; no tiene ventaja predictiva sobre otra combinación legal.")
-                    }
-                }
-            }
-            Text(message, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-            Divider()
-            Text("Combinaciones aceptadas y protegidas contra duplicados: " + generated.size, fontWeight = FontWeight.SemiBold)
-            Text("Registro de intentos: " + generationLog.size + " · se conserva en este dispositivo.")
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(generationLog.asReversed()) { record ->
+                item {
                     Card {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(
-                                (if (record.accepted) "ACEPTADA" else "RECHAZADA") +
-                                    " · Intento " + record.attempt,
-                                color = if (record.accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(record.white.joinToString(" · ") + " | Mega Ball: " + record.mega)
-                            Text(record.reason, style = MaterialTheme.typography.bodySmall)
-                            Text(
-                                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(record.timestamp)),
-                                style = MaterialTheme.typography.labelSmall
-                            )
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("Tu combinación", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                                draw.white.forEach { NumberBall(it.toString()) }
+                                NumberBall(draw.mega.toString(), mega = true)
+                            }
+                            Text("Aleatoria; no tiene ventaja predictiva sobre otra combinación legal.")
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Text("El historial oficial, las combinaciones aceptadas y el registro se guardan localmente.")
+            item { Text(message, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) }
+            item { Divider() }
+            item {
+                Text("Combinaciones aceptadas y protegidas contra duplicados: " + generated.size, fontWeight = FontWeight.SemiBold)
+            }
+            item { Text("Registro de intentos: " + generationLog.size + " · se conserva en este dispositivo.") }
+            items(generationLog.asReversed()) { record ->
+                Card {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            (if (record.accepted) "ACEPTADA" else "RECHAZADA") +
+                                " · Intento " + record.attempt,
+                            color = if (record.accepted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(record.white.joinToString(" · ") + " | Mega Ball: " + record.mega)
+                        Text(record.reason, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(record.timestamp)),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            }
+            item { Text("El historial oficial, las combinaciones aceptadas y el registro se guardan localmente.") }
         }
     }
 }
