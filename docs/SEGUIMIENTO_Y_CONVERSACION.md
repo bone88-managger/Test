@@ -135,5 +135,30 @@ Comprobar de nuevo el estado de GitHub Actions antes de afirmar que la compilaci
 5. Al completar y verificar una tarea, tacharla con Markdown y añadir en esa misma línea la fecha y hora local exactas de finalización, incluyendo la zona horaria; no eliminarla ni borrar decisiones anteriores.
 6. No agregar funciones nuevas sin explicarlas al usuario y recibir su aprobación.
 
+
+## 9. Prueba real del usuario y correcciones de interfaz (2026-11-08)
+
+El usuario instaló el APK en su teléfono y reportó:
+- La instalación se completa correctamente.
+- La selección/importación del PDF está disponible.
+- Durante la lectura del PDF aparece una pantalla negra; después la aplicación vuelve a funcionar.
+- La generación de combinaciones funciona.
+- No puede desplazarse hacia abajo para consultar los entradas del registro.
+
+Correcciones aplicadas en la rama:
+- Se movió la lectura y el análisis del PDF a un hilo de trabajo (`Dispatchers.IO`) para evitar bloquear la interfaz.
+- Se añadió un indicador visible de carga y se deshabilitó temporalmente el botón de importación mientras se procesa el archivo.
+- Se reemplazó el diseño con una lista desplazable única para toda la pantalla; el registro se muestra dentro de esa lista, sin una lista desplazable anidada dentro de una columna.
+
+Commit de corrección: `339c1819188123993dc648fe75d16d2a673321c1`.
+
+Pendiente:
+- [ ] Confirmar que GitHub Actions compila correctamente esta corrección y publica un APK nuevo.
+- [ ] Instalar el APK corregido en el teléfono y verificar que el PDF muestra el indicador de carga sin pantalla negra.
+- [ ] Verificar que se puede desplazar desde la parte superior hasta todos los registros.
+- [ ] Confirmar que la importación conserva las generaciones anteriores y que la generación sigue funcionando después de la importación.
+
+No marcar estas pruebas como completadas hasta que el usuario pruebe el nuevo APK.
+
 ---
 Última actualización: 2026-11-08.
