@@ -1,46 +1,36 @@
-# Simulador Mega Millions
+# Mega Millions Simulator — Android APK
 
-Aplicación educativa para generar combinaciones legales de Mega Millions y filtrarlas contra un historial de sorteos.
+Aplicación **nativa para Android**. No necesita navegador ni servidor web.
 
-## Reglas actuales implementadas
+## Qué hace
+- Importa el historial desde un PDF o CSV usando el selector de archivos del teléfono.
+- Conserva el historial y las combinaciones generadas en el almacenamiento local de la app.
+- Genera cinco bolas blancas distintas de 1 a 70 y una Mega Ball independiente de 1 a 24.
+- Usa `SecureRandom` para generar números aleatorios.
+- Rechaza una fila completa ya existente y cualquier candidato que comparta más de dos valores numéricos distintos con una fila histórica.
+- Compara los seis valores como conjunto numérico, sin distinguir bola blanca o Mega Ball; un valor duplicado dentro de una fila cuenta una sola vez.
+- Admite valores históricos de eras anteriores (1–99) sin imponerles los rangos actuales.
 
-- Cinco bolas blancas distintas del 1 al 70, mostradas en orden ascendente.
-- Una Mega Ball del 1 al 24, elegida independientemente. Puede coincidir numéricamente con una bola blanca.
-- Generación con `secrets.SystemRandom`, usando la fuente criptográfica del sistema operativo.
-- Se rechaza el candidato si comparte más de N valores numéricos distintos con **cualquier** fila histórica. Por defecto N=2.
-- Se comparan los seis valores como conjunto numérico, sin distinguir si el número histórico estaba en una posición blanca o en Mega Ball. Un valor repetido en una misma fila cuenta una sola vez.
-- El historial admite valores antiguos hasta 99, sin aplicarles los rangos actuales. Así se pueden conservar sorteos de eras anteriores.
+## Instalar
+El workflow **Android APK** construye `app-debug.apk` en GitHub Actions y lo publica como artefacto `mega-millions-debug-apk`.
+1. Abre la pestaña Actions del repositorio.
+2. Entra en la ejecución más reciente de **Android APK** que haya terminado correctamente.
+3. Descarga el artefacto `mega-millions-debug-apk` y extrae `app-debug.apk`.
+4. Abre el APK en Android y autoriza la instalación desde esa fuente si el sistema lo solicita.
 
-## Ejecutar localmente
+## Primera ejecución
+Pulsa **Cargar PDF / CSV** y selecciona el PDF histórico guardado en el teléfono. El lector extrae las filas con fecha, cinco bolas y Mega Ball; después la app conserva el historial localmente. También acepta CSV con columnas:
+`date,white1,white2,white3,white4,white5,mega_ball`.
 
-Requiere Python 3.10 o posterior.
+## Pruebas del lector PDF
+El PDF histórico aportado en esta conversación tiene 45 páginas. Su extracción de texto produjo 1.406 sorteos únicos (11/03/2026 a 05/17/2013 en el orden del documento), incluyendo números antiguos como 75. La app permite revisar el total importado en pantalla.
 
+## Desarrollo del motor Python
+El módulo `lottery.py` conserva el motor de referencia y sus pruebas:
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
-streamlit run app.py
-```
-
-## Formato CSV
-
-El CSV debe incluir estas columnas (puede incluir otras):
-
-```csv
-date,white1,white2,white3,white4,white5,mega_ball
-2025-04-08,10,20,30,40,50,7
-```
-
-La aplicación acepta CSV y PDF. La importación PDF es heurística: intenta leer cada línea como fecha seguida de cinco bolas blancas y la Mega Ball. **Revisa el CSV normalizado que descarga la aplicación** antes de confiar en los resultados. Si el PDF tiene columnas o saltos de línea complejos, convierte primero los datos a CSV.
-
-## Pruebas
-
-```bash
 pytest -q
 ```
 
-## Límites importantes
-
-Este programa no predice el futuro, no garantiza que nadie gane ni vuelve menos probable que salga una combinación. Los sorteos oficiales son independientes. Los filtros históricos solo restringen las combinaciones que este programa devuelve; no alteran el mecanismo oficial ni crean una ventaja matemática. Si el filtro es demasiado estricto, el generador se detiene tras un límite de intentos y muestra un error.
-
-Reglas oficiales: [Mega Millions – How to Play](https://www.megamillions.com/how-to-play).
+## Límite matemático
+Este simulador no predice sorteos ni puede garantizar que nadie gane. Las restricciones solo determinan qué combinaciones acepta la aplicación; no cambian las probabilidades del sorteo oficial.
