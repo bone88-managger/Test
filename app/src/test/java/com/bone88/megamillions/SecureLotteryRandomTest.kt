@@ -1,0 +1,92 @@
+package com.bone88.megamillions
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.security.SecureRandom
+
+class SecureLotteryRandomTest {
+    @Test
+    fun boundedSamplerRejectsIncompleteTail() {
+        // For bound 3, 2^32 - 1 is the first value outside the divisible range.
+        assertNull(SecureLotteryRandom.mapUnsignedToBound(4_294_967_295L, 3))
+        assertEquals(2, SecureLotteryRandom.mapUnsignedToBound(4_294_967_294L, 3))
+        assertEquals(0, SecureLotteryRandom.mapUnsignedToBound(0L, 3))
+    }
+
+    @Test
+    fun whiteBallsAreDistinctAndWithinCurrentRange() {
+        repeat(2_000) {
+            val white = SecureLotteryRandom.sampleWhite()
+            assertEquals(5, white.size)
+            assertEquals(5, white.distinct().size)
+            assertEquals(white.sorted(), white)
+            assertTrue(white.all { it in 1..70 })
+        }
+    }
+
+    @Test
+    fun megaBallStaysWithinItsIndependentRange() {
+        repeat(5_000) {
+            val mega = SecureLotteryRandom.sampleMega()
+            assertTrue(mega in 1..24)
+        }
+    }
+
+    @Test
+    fun whiteNumberDistributionPassesBroadChiSquareCheck() {
+        val counts = IntArray(70)
+        val random = SecureRandom()
+        repeat(20_000) {
+            SecureLotteryRandom.sampleWhite(random).forEach { counts[it - 1]++ }
+        }
+        val expected = counts.sum().toDouble() / counts.size
+        val chiSquare = counts.sumOf { count ->
+            val difference = count - expected
+            difference * difference / expected
+        }
+        assertTrue("Unexpected white-ball frequency imbalance: " + chiSquare, chiSquare < 120.0)
+    }
+
+    @Test
+    fun megaBallDistributionPassesBroadChiSquareCheck() {
+        val counts = IntArray(24)
+        val random = SecureRandom()
+        repeat(60_000) {
+            counts[SecureLotteryRandom.sampleMega(random) - 1]++
+        }
+        val expected = counts.sum().toDouble() / counts.size
+        val chiSquare = counts.sumOf { count ->
+            val difference = count - expected
+            difference * difference / expected
+        }
+        assertTrue("Unexpected Mega Ball frequency imbalance: " + chiSquare, chiSquare < 60.0)
+    }
+
+    @Test
+    fun numberRangesDoNotReceiveAnArtificialPreference() {
+        val counts = IntArray(3)
+        val random = SecureRandom()
+        repeat(20_000) {
+            SecureLotteryRandom.sampleWhite(random).forEach { number ->
+                when (number) {
+                    in 1..23 -> counts[0]++
+                    in 24..46 -> counts[1]++
+                    in 47..70 -> counts[2]++
+                }
+            }
+        }
+        val total = counts.sum().toDouble()
+        val expected = doubleArrayOf(total * 23 / 70, total * 23 / 70, total * 24 / 70)
+        val chiSquare = counts.indices.sumOf { index ->
+            val difference = counts[index] - expected[index]
+            difference * difference / expected[index]
+        }
+        assertTrue("Unexpected range preference: " + chiSquare, chiSquare < 20.0)
+        assertNotNull(counts)
+        assertFalse(counts.all { it == 0 })
+    }
+}
