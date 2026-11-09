@@ -10,6 +10,48 @@ import java.security.SecureRandom
 
 class SecureLotteryRandomTest {
     @Test
+    fun historicalColumnAnalysisSortsDrawsChronologicallyAndFindsLatest() {
+        val older = Draw("2026-01-01", listOf(5, 15, 25, 35, 45), 1)
+        val middle = Draw("2026-01-08", listOf(8, 15, 26, 35, 44), 2)
+        val newest = Draw("2026-01-15", listOf(6, 17, 26, 36, 44), 3)
+
+        val result = analyzeOfficialDrawHistory(listOf(newest, older, middle))
+
+        assertEquals(newest, result.latestDraw)
+        assertEquals(2, result.transitions)
+        assertEquals(1, result.columns[0].greater)
+        assertEquals(1, result.columns[0].lower)
+        assertEquals(0, result.columns[0].equal)
+        assertEquals(mapOf(2 to 1, 3 to 1), result.columns[0].intervals)
+        assertEquals("Empate", result.columns[2].leadingDirection)
+    }
+
+    @Test
+    fun historicalColumnAnalysisHandlesSingleDrawWithoutInventingTransitions() {
+        val only = Draw("2026-01-01", listOf(1, 2, 3, 4, 5), 6)
+
+        val result = analyzeOfficialDrawHistory(listOf(only))
+
+        assertEquals(only, result.latestDraw)
+        assertEquals(0, result.transitions)
+        assertTrue(result.columns.all { it.total == 0 && it.intervals.isEmpty() })
+    }
+
+    @Test
+    fun historicalColumnAnalysisKeepsColumnsIndependent() {
+        val first = Draw("2026-01-01", listOf(1, 10, 20, 30, 40), 1)
+        val second = Draw("2026-01-02", listOf(2, 9, 22, 27, 45), 2)
+
+        val result = analyzeOfficialDrawHistory(listOf(first, second))
+
+        assertEquals(1, result.columns[0].greater)
+        assertEquals(1, result.columns[1].lower)
+        assertEquals(1, result.columns[2].greater)
+        assertEquals(1, result.columns[3].lower)
+        assertEquals(1, result.columns[4].greater)
+    }
+
+    @Test
     fun importedDrawsMustUseOfficialMegaMillionsRanges() {
         assertTrue(isValidDrawNumbers(listOf(1, 2, 3, 4, 70), 24))
         assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4, 71), 12))
