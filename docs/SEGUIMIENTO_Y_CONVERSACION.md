@@ -581,3 +581,36 @@ Estado al cierre de hoy:
 **Pausa solicitada por el usuario:** no continuar hoy con cambios de código, pruebas ni compilaciones. Retomar mañana desde la autorización de la optimización y las tareas pendientes de esta sección. No se ha modificado el código de la aplicación en esta etapa.
 
 Actualización: 2026-11-09 17:25:33 UTC-04:00.
+
+## 26. Pantalla de análisis histórico por columnas (2026-11-09)
+
+El usuario confirmó que el análisis debe utilizar exclusivamente los sorteos oficiales importados mediante PDF/CSV y que la generación debe permanecer uniforme. Se implementó una pantalla independiente para consultar el comportamiento histórico por columna, sin utilizar los historiales de combinaciones aceptadas/rechazadas ni modificar la selección aleatoria.
+
+Funcionalidad añadida:
+- Botón **VER ANÁLISIS HISTÓRICO POR COLUMNAS** en la pantalla principal.
+- Pantalla separada con el último sorteo oficial detectado, sus cinco bolas blancas y la fecha.
+- Orden cronológico de los sorteos para identificar correctamente el último y comparar cada sorteo con el que salió inmediatamente después.
+- Análisis independiente para cada una de las cinco columnas: cantidad de veces que el siguiente número fue mayor, menor o igual.
+- Frecuencias de los intervalos con dirección: cuánto subió (+) o bajó (-) el valor de cada columna; también se contabilizan las repeticiones del mismo valor.
+- Presentación de la tendencia histórica predominante y del intervalo direccional más frecuente de cada columna.
+- El análisis se calcula desde el historial oficial importado y se actualiza al cambiar ese historial.
+- La Mega Ball se muestra en el último sorteo, pero no interviene en las comparaciones por columna.
+
+Regla esencial:
+- La pantalla es únicamente informativa. No pondera, filtra ni altera la generación. El generador continúa usando su muestreo uniforme existente y mantiene intactas las reglas de validación, duplicados y rechazos.
+- Las frecuencias históricas no constituyen probabilidades predictivas del próximo sorteo.
+
+Cambios de código:
+- Pantalla y cálculo inicial del análisis: commit `5a8588348440faeefaa2afab0f92a96a48ba7abf`.
+- Pruebas unitarias nuevas para orden cronológico, último sorteo, ausencia de transiciones con un solo sorteo e independencia entre columnas: commit `730d7926b403a59cb8b17f9d50fd222e9cb58f4c`.
+- Intervalos direccionales separados (subidas y bajadas) y ajuste de prueba: commit `80cb1d36f8d77407fe954d724cd5d3cdeaa68a52` y commit `ba008071374aaac5e6f9a4cda9023f635f9cb98a`.
+
+Estado de verificación al registrar esta sección:
+- [x] ~~Añadir la pantalla de análisis histórico separada del generador.~~ — Código integrado.
+- [x] ~~Calcular comparaciones cronológicas por columna y frecuencias de intervalos positivos/negativos.~~ — Código integrado.
+- [x] ~~Añadir pruebas unitarias para el cálculo y orden cronológico.~~ — Pruebas añadidas; las ejecuciones correspondientes al commit final están en curso.
+- [ ] Confirmar que las pruebas Android del commit final terminan correctamente.
+- [ ] Confirmar que la compilación Android APK del commit final termina correctamente y publica el artefacto.
+- [ ] Instalar y revisar en el teléfono la nueva pantalla, comprobar que el último sorteo y las frecuencias coinciden con el archivo oficial importado, y confirmar que generar números sigue siendo uniforme.
+
+Actualización: 2026-11-09 18:02:33 UTC-04:00.
