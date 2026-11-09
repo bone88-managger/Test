@@ -18,6 +18,20 @@ class SecureLotteryRandomTest {
         assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4), 12))
     }
     @Test
+    fun duplicateComparisonUsesOnlyFiveWhiteBallsAndIgnoresMegaBall() {
+        val candidate = Draw("candidate", listOf(10, 20, 30, 40, 50), 1)
+        val sameWhitesDifferentMega = listOf(Draw("past", listOf(10, 20, 30, 40, 50), 24))
+        assertTrue(hasWhiteBallDuplicate(candidate, sameWhitesDifferentMega))
+    }
+
+    @Test
+    fun duplicateComparisonRequiresTheSameWhiteBallPositions() {
+        val candidate = Draw("candidate", listOf(10, 20, 30, 40, 50), 1)
+        val differentWhites = listOf(Draw("past", listOf(10, 20, 30, 40, 51), 1))
+        assertFalse(hasWhiteBallDuplicate(candidate, differentWhites))
+    }
+
+    @Test
     fun historicalFilterAllowsExactlyOneWhiteBallMatch() {
         val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
         val history = listOf(Draw("past", listOf(1, 9, 6, 7, 8), 20))
