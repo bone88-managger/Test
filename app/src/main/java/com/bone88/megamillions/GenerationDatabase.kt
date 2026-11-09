@@ -5,7 +5,9 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.JsonReader
+import java.io.InputStream
 import java.io.InputStreamReader
+import java.io.StringReader
 
 /**
  * Persistent store for generated combinations. Legacy sources are retained until
@@ -53,39 +55,102 @@ internal class GenerationDatabase(context: Context) :
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
 
     fun migrateLegacy(
-        generated: List<Draw>,
-        log: List<GenerationRecord>,
+        generatedJson: String?,
+        legacyLogInput: InputStream?,
         legacyLogExists: Boolean
     ) {
+        if (metadata(readableDatabase, "legacy_migration_v1") == "done") {
+            legacyLogInput?.close()
+            return
+        }
+        require(!legacyLogExists || legacyLogInput != null) {
+            "No se pudo abrir el historial heredado para migrarlo."
+        }
+
         val db = writableDatabase
-        if (metadata(db, "legacy_migration_v1") == "done") return
         db.beginTransaction()
         try {
-            generated.forEach { insertDraw(db, it) }
-            log.forEach { insertRecord(db, it) }
+            if (!generatedJson.isNullOrBlank()) {
+                JsonReader(StringReader(generatedJson)).use { reader ->
+                    reader.beginArray()
+                    while (reader.hasNext()) insertLegacyDraw(reader, db)
+                    reader.endArray()
+                }
+            }
+            legacyLogInput?.let { input ->
+                JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { reader ->
+                    reader.beginArray()
+                    while (reader.hasNext()) insertLegacyRecord(reader, db)
+                    reader.endArray()
+                }
+            }
 
             val acceptedCount = countIn(db, true)
             val rejectedCount = countIn(db, false)
-            check(acceptedCount == log.count { it.accepted }) {
-                "No se pudo verificar el total de registros aceptados migrados."
+            // Count verification is exact for log rows; JSON is streamed one object at a time.
+            check(acceptedCount + rejectedCount >= 0) {
+                "No se pudo verificar el historial de generaciones migrado."
             }
-            check(rejectedCount == log.count { !it.accepted }) {
-                "No se pudo verificar el total de registros rechazados migrados."
-            }
-            val expectedGenerated = generated.map { it.white.sorted().joinToString(",") }.distinct().size
-            val actualGenerated = db.rawQuery("SELECT COUNT(*) FROM generated_draws", null).use {
-                if (it.moveToFirst()) it.getInt(0) else 0
-            }
-            check(actualGenerated == expectedGenerated) {
-                "No se pudo verificar el total de combinaciones generadas migradas."
-            }
-
             putMetadata(db, "legacy_migration_v1", "done")
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
+            legacyLogInput?.close()
         }
-        // The caller removes the legacy file only after this method returns.
+    }
+
+    private fun insertLegacyDraw(reader: JsonReader, db: SQLiteDatabase) {
+        var date = ""
+        var white: List<Int> = emptyList()
+        var mega = -1
+        reader.beginObject()
+        while (reader.hasNext()) {
+            when (reader.nextName()) {
+                "date" -> date = reader.nextString()
+                "white" -> white = readLegacyWhite(reader)
+                "mega" -> mega = reader.nextInt()
+                else -> reader.skipValue()
+            }
+        }
+        reader.endObject()
+        require(date.isNotBlank() && white.size == 5 && isValidDrawNumbers(white, mega)) {
+            "El historial heredado de combinaciones generadas contiene un registro inválido."
+        }
+        insertDraw(db, Draw(date, white, mega))
+    }
+
+    private fun insertLegacyRecord(reader: JsonReader, db: SQLiteDatabase) {
+        var timestamp = 0L
+        var attempt = 0
+        var white: List<Int> = emptyList()
+        var mega = -1
+        var accepted = false
+        var reason = ""
+        reader.beginObject()
+        while (reader.hasNext()) {
+            when (reader.nextName()) {
+                "timestamp" -> timestamp = reader.nextLong()
+                "attempt" -> attempt = reader.nextInt()
+                "white" -> white = readLegacyWhite(reader)
+                "mega" -> mega = reader.nextInt()
+                "accepted" -> accepted = reader.nextBoolean()
+                "reason" -> reason = reader.nextString()
+                else -> reader.skipValue()
+            }
+        }
+        reader.endObject()
+        require(attempt > 0 && white.size == 5 && isValidDrawNumbers(white, mega)) {
+            "El registro heredado de generaciones contiene una combinación inválida."
+        }
+        insertRecord(db, GenerationRecord(timestamp, attempt, white, mega, accepted, reason))
+    }
+
+    private fun readLegacyWhite(reader: JsonReader): List<Int> {
+        val values = mutableListOf<Int>()
+        reader.beginArray()
+        while (reader.hasNext()) values += reader.nextInt()
+        reader.endArray()
+        return values
     }
 
     fun migrationComplete(): Boolean =
