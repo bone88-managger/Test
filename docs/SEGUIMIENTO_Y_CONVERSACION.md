@@ -396,3 +396,30 @@ Tareas inmediatas:
 - [ ] Añadir pruebas y confirmar compilación Android.
 
 Actualización: 2026-11-09 15:59:17 UTC-04:00.
+
+
+## 18. Revisión de estado y continuación de la integración SQLite (2026-11-09)
+
+El usuario pidió actualizar este documento y continuar inmediatamente con el siguiente paso del trabajo.
+
+Revisión del código realizada:
+- GenerationDatabase.kt existe y contiene el esquema SQLite, consultas básicas, inserciones, conteos, paginación y borrado selectivo.
+- MainActivity.kt sigue leyendo generated desde SharedPreferences y generation_log.json completo a memoria.
+- SimulatorScreen mantiene generated y generationLog como listas completas en estado Compose.
+- La generación sigue recibiendo las listas completas; todavía no consulta SQLite.
+- Los botones de borrado siguen modificando las listas en memoria y guardando el JSON heredado.
+- Por tanto, el almacenamiento SQLite todavía no está integrado funcionalmente en la aplicación.
+
+**Siguiente paso en curso: migración segura de los datos heredados a SQLite.**
+- Identificar y migrar los registros de generation_log.json y las combinaciones de generated en SharedPreferences.
+- Ejecutar la migración dentro de una transacción y verificar que los datos estén persistidos antes de marcarla como completada.
+- Conservar los datos heredados hasta verificar la migración; no borrar ni sobrescribir los archivos originales durante este paso.
+- Evitar introducir cambios en las reglas de generación, comparación posicional o importación PDF/CSV.
+
+Estado:
+- [x] ~~Revisar el estado real del código y documentar qué partes siguen desconectadas.~~ — Completada: 2026-11-09 16:34:26 UTC-04:00
+- [ ] Integrar y verificar la migración segura a SQLite.
+- [ ] Conectar generación, historial paginado y borrado selectivo a SQLite.
+- [ ] Añadir/verificar pruebas y compilar una nueva APK.
+
+Actualización: 2026-11-09 16:34:26 UTC-04:00.
