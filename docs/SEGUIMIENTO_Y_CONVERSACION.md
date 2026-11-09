@@ -264,3 +264,35 @@ Corrección implementada después de la auditoría inicial (2026-11-09):
 - [x] ~~Instalar este APK y verificar en el teléfono que la Mega Ball no suma coincidencias en la generación real.~~ — Completada: 2026-11-09 12:45:46 UTC-04:00
 
 La revisión y corrección del filtro histórico quedó implementada; las pruebas automatizadas, la compilación Android y la prueba real en el teléfono del usuario fueron completadas correctamente. El usuario confirmó que instaló el APK y que funciona correctamente. Verificación en dispositivo: 2026-11-09 12:45:46 UTC-04:00.
+
+
+## 13. Corrección del criterio de coincidencias por columna (2026-11-09)
+
+Nueva decisión confirmada por el usuario:
+- Las cinco bolas blancas se comparan por posición/columna, manteniendo el orden ascendente.
+- Solo cuenta una coincidencia cuando el mismo número ocupa la misma columna en ambas combinaciones.
+- Se rechaza una candidata cuando tiene 3 o más coincidencias en las mismas columnas.
+- Compartir tres números en columnas diferentes no es motivo de rechazo.
+- Esta regla se aplica contra el historial oficial y contra las combinaciones generadas anteriormente.
+- La Mega Ball queda excluida de esta comparación.
+- El bloqueo de duplicados y las demás funciones no se modifican en esta corrección.
+
+Ejemplo aprobado:
+- A: 10 26 32 45 50
+- B: 10 20 26 35 45
+- Solo coincide la primera columna; B no se rechaza por coincidencias históricas/posicionales.
+
+Implementación realizada:
+- Se añadió una comparación posicional de las bolas blancas.
+- El filtro ahora revisa tanto el historial oficial como las generaciones anteriores.
+- Se actualizó el texto de reglas y el motivo de rechazo.
+- Se añadieron pruebas para 3 números compartidos en columnas diferentes, 3 coincidencias en las mismas columnas y exactamente 2 coincidencias posicionales.
+
+Commits:
+- Código: 1b7246ec3b34be8ae80fe56d6686edc9f9b6b419
+- Pruebas: 10356518f16f9f655f8d064cabd4c4592ae0b375
+
+Pendiente de verificación:
+- [ ] Confirmar que las pruebas Android pasan.
+- [ ] Confirmar que el workflow Android APK compila y publica el APK.
+- [ ] Instalar el APK y comprobar el ejemplo aprobado en el teléfono.
