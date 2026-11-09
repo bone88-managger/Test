@@ -154,6 +154,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PDFBoxResourceLoader.init(applicationContext)
+        setContent {
+            MaterialTheme {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier.fillMaxSize().padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Text("Preparando y verificando los historiales...")
+                    }
+                }
+            }
+        }
         val database = GenerationDatabase(applicationContext)
         lifecycleScope.launch {
             try {
@@ -435,7 +449,7 @@ private fun SimulatorScreen(
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Rechazos registrados: " + rejectedCount, modifier = Modifier.weight(1f))
-                        OutlinedButton(onClick = { confirmClearRejected = true }) { Text("Borrar rechazos") }
+                        OutlinedButton(onClick = { confirmClearRejected = true }, enabled = !isGenerating) { Text("Borrar rechazos") }
                     }
                 }
                 items(rejectedRecords) { record ->
@@ -483,7 +497,7 @@ private fun SimulatorScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(
                         onClick = { picker.launch(arrayOf("application/pdf", "text/*", "application/octet-stream")) },
-                        enabled = !isImporting
+                        enabled = !isImporting && !isGenerating
                     ) {
                         Text("Cargar PDF / CSV")
                     }
@@ -580,7 +594,7 @@ private fun SimulatorScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Combinaciones aceptadas y protegidas contra duplicados: " + generatedCount, fontWeight = FontWeight.SemiBold)
-                    OutlinedButton(onClick = { confirmClearAccepted = true }) { Text("Borrar aceptados") }
+                    OutlinedButton(onClick = { confirmClearAccepted = true }, enabled = !isGenerating) { Text("Borrar aceptados") }
                 }
             }
             item {
