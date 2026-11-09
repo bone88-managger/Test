@@ -59,10 +59,13 @@ internal fun isValidDrawNumbers(white: List<Int>, mega: Int): Boolean =
     white.size == WHITE_COUNT && white.distinct().size == WHITE_COUNT &&
         white.all { it in WHITE_MIN..WHITE_MAX } && mega in MEGA_MIN..MEGA_MAX
 
-private data class Draw(val date: String, val white: List<Int>, val mega: Int) {
-    val values: Set<Int> get() = (white + mega).toSet()
+internal data class Draw(val date: String, val white: List<Int>, val mega: Int) {
     val key: String get() = white.sorted().joinToString(",") + "|" + mega
 }
+
+// Historical matching is deliberately white-ball-only. Mega Ball never contributes.
+internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): Boolean =
+    history.any { old -> candidate.white.toSet().intersect(old.white.toSet()).size > 2 }
 
 private data class GenerationRecord(
     val timestamp: Long,
@@ -369,7 +372,7 @@ private fun SimulatorScreen(
                 }
             }
             item {
-                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechazan candidatos que compartan más de 2 valores numéricos con cualquier fila histórica.")
+                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 3 o más bolas blancas coinciden con las 5 bolas blancas de cualquier sorteo histórico. La Mega Ball no cuenta como coincidencia.")
             }
             item {
                 OutlinedTextField(
@@ -489,13 +492,13 @@ private fun generateCandidate(
 
         val duplicate = candidate.key in knownKeys
         val conflictingDraw = if (duplicate) null else history.firstOrNull { old ->
-            candidate.values.intersect(old.values).size > 2
+            candidate.white.toSet().intersect(old.white.toSet()).size > 2
         }
 
         val accepted = !duplicate && conflictingDraw == null
         val reason = when {
             duplicate -> "Combinación completa ya registrada anteriormente."
-            conflictingDraw != null -> "Supera 2 coincidencias numéricas con el sorteo " + conflictingDraw.date + "."
+            conflictingDraw != null -> "Supera 2 coincidencias de bolas blancas con el sorteo " + conflictingDraw.date + "."
             else -> "Aceptada: cumple las reglas y no está duplicada."
         }
 
