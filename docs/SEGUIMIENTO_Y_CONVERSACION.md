@@ -247,8 +247,7 @@ Revisión estática de `MainActivity.kt`:
 Pendiente de la auditoría:
 - [x] ~~Corregir/verificar el filtro ALL para comparar exclusivamente las cinco bolas blancas de cada combinación; excluir siempre la Mega Ball del conteo.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
 - [x] ~~Añadir pruebas deterministas para filtro ALL: exactamente 2 coincidencias blancas debe permitir el candidato; 3 debe rechazarlo; coincidencias de valor entre bola blanca y Mega Ball no deben contar.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
-- [ ] Añadir pruebas para duplicados con blancas en distinto orden y Mega Ball distinta/igual.
-- [ ] Añadir pruebas para el límite de intentos, verificando que no se aceptan candidatos inválidos al agotarlo.
+- [ ] Añadir pruebas para duplicados con blancas en distinto orden y Mega Ball distinta/igual.- [ ] Añadir pruebas para el límite de intentos, verificando que no se aceptan candidatos inválidos al agotarlo.
 - [ ] Probar en el teléfono que combinaciones aceptadas y registro sobreviven al cierre forzado/reapertura y a reimportar el historial.
 - [ ] Definir cómo detectar y manejar almacenamiento local dañado sin borrar silenciosamente el registro ni la protección contra duplicados.
 
@@ -497,7 +496,6 @@ Verificación:
 - [ ] Confirmar pruebas automatizadas del commit más reciente 80ce5892391c9ccbf600c55813064617a8e27dac.
 - [ ] Confirmar compilación APK del commit más reciente.
 - [ ] Revisar resultados de uso y posibles errores en el teléfono antes de considerar final la integración.
-
 Limitación pendiente:
 - El historial oficial importado continúa en memoria, como antes. Los historiales generados/aceptados/rechazados ya usan páginas SQLite y no se cargan completos al iniciar.
 
@@ -553,3 +551,33 @@ Estado al cierre de esta actualización:
 No se declara terminada la validación de uso real hasta que el usuario comunique los resultados de estas pruebas.
 
 Actualización: 2026-11-09 16:41:00 UTC-04:00.
+
+## 25. Pausa del trabajo y optimización de rendimiento pendiente (2026-11-09)
+
+El usuario informó que la generación funciona correctamente al principio, pero se vuelve muy lenta cuando el historial de rechazos supera aproximadamente los 50.000 registros. Se revisó el código para localizar el origen de la degradación.
+
+Hallazgos de la revisión:
+- En cada intento de generación se realizan varias consultas SQLite para comprobar rechazos previos, duplicados y conflictos posicionales.
+- Las comprobaciones de conflicto posicional en `GenerationDatabase.kt` comparan las cinco columnas mediante expresiones aritméticas sobre columnas, por ejemplo sumas de condiciones booleanas.
+- Ese tipo de predicado puede impedir que SQLite aproveche índices convencionales por pares y provocar recorridos extensos de las tablas a medida que crece el historial.
+- La degradación observada no implica que exista un límite fijo de 50.000 registros; el costo puede crecer con el tamaño del historial y la cantidad de intentos.
+
+Propuesta técnica pendiente de autorización:
+- Optimizar las búsquedas de conflictos posicionales para que consulten pares de columnas mediante índices compuestos.
+- Verificar con `EXPLAIN QUERY PLAN` que SQLite utilice los índices.
+- Mantener SQLite como almacenamiento persistente y no cargar el historial completo en RAM.
+- Conservar exactamente las reglas actuales de duplicados, rechazos y coincidencias por columna.
+- No borrar registros, alterar la importación PDF/CSV ni cambiar otras funciones.
+- Medir el comportamiento con historiales grandes y ejecutar pruebas antes de generar otra APK.
+
+Estado al cierre de hoy:
+- [x] ~~Inspeccionar el flujo de generación y localizar las consultas SQLite que pueden degradar el rendimiento con historiales grandes.~~ — Completada: 2026-11-09 17:25:33 UTC-04:00.
+- [ ] Obtener la autorización del usuario para aplicar la optimización propuesta.
+- [ ] Implementar únicamente la optimización aprobada, sin cambiar las reglas funcionales.
+- [ ] Añadir/verificar pruebas y confirmar que las consultas aprovechan los índices.
+- [ ] Compilar una nueva APK y comprobar el resultado de GitHub Actions.
+- [ ] Probar en el teléfono con un historial grande y comparar el rendimiento.
+
+**Pausa solicitada por el usuario:** no continuar hoy con cambios de código, pruebas ni compilaciones. Retomar mañana desde la autorización de la optimización y las tareas pendientes de esta sección. No se ha modificado el código de la aplicación en esta etapa.
+
+Actualización: 2026-11-09 17:25:33 UTC-04:00.
