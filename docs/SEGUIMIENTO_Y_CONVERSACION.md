@@ -370,3 +370,29 @@ Tareas:
 - [ ] Instalar y probar la nueva versión en el teléfono antes de marcar la tarea como terminada.
 
 Última actualización de este documento: 2026-11-09 15:46:16 UTC-04:00.
+
+
+## 17. Inicio de implementación SQLite (2026-11-09)
+
+Se inició el trabajo aprobado en la sección 16. Cambios escritos en GitHub:
+- Se añadió `GenerationDatabase.kt` con SQLiteOpenHelper, tablas para registro de generaciones y combinaciones generadas, índices, consultas de conteo, consulta de rechazos por clave blanca, consultas de conflictos posicionales, inserción transaccional, paginación de 50 por defecto y borrado selectivo.
+- Se hizo visible internamente `GenerationRecord` para que la capa SQLite pueda almacenar y devolver registros.
+
+Commits:
+- Capa SQLite inicial: `ff1200b2ea4e9216dd8588cd49c9c8f2fc47c895`
+- Visibilidad del modelo de registro: `10228eed7f614a7dd6532c8802b57c7e4e050173`
+
+**Estado y limitaciones de este avance:**
+- La clase SQLite ya está añadida, pero todavía no está conectada al flujo de inicio, generación ni pantallas de la aplicación.
+- La migración desde JSON/SharedPreferences todavía no está integrada ni verificada.
+- La interfaz aún mantiene las listas completas en memoria; la paginación todavía no está conectada.
+- No se ha confirmado compilación ni pruebas de esta implementación. No considerar completada la optimización ni descargar/instalar este estado como versión final.
+
+Tareas inmediatas:
+- [ ] Integrar migración transaccional de los datos heredados y conservar los archivos originales hasta verificarla.
+- [ ] Cambiar la generación para consultar SQLite sin cargar listas de aceptados/rechazados.
+- [ ] Conectar pantallas a conteos y páginas de 50 registros.
+- [ ] Conectar borrado selectivo y escrituras incrementales a SQLite.
+- [ ] Añadir pruebas y confirmar compilación Android.
+
+Actualización: 2026-11-09 16:xx UTC-04:00 (hora exacta pendiente de confirmar al registrar el siguiente commit).
