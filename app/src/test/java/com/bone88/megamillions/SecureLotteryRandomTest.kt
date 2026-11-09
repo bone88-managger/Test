@@ -40,6 +40,29 @@ class SecureLotteryRandomTest {
         assertFalse(hasHistoricalWhiteConflict(candidate, history))
     }
 
+
+    @Test
+    fun historicalFilterAllowsThreeSharedNumbersWhenTheyAreInDifferentColumns() {
+        val candidate = Draw("candidate", listOf(10, 20, 26, 35, 45), 12)
+        val history = listOf(Draw("past", listOf(10, 26, 32, 45, 50), 20))
+        // Shared values are 10, 26 and 45, but only 10 is in the same column.
+        assertFalse(hasHistoricalWhiteConflict(candidate, history))
+    }
+
+    @Test
+    fun columnFilterRejectsThreeMatchesInTheSamePositions() {
+        val candidate = Draw("candidate", listOf(10, 26, 32, 45, 50), 12)
+        val previous = Draw("previous", listOf(10, 26, 35, 45, 60), 20)
+        assertTrue(hasWhiteColumnConflict(candidate, previous))
+    }
+
+    @Test
+    fun columnFilterAllowsOnlyTwoMatchesInTheSamePositions() {
+        val candidate = Draw("candidate", listOf(10, 26, 32, 45, 50), 12)
+        val previous = Draw("previous", listOf(10, 26, 35, 40, 60), 20)
+        assertFalse(hasWhiteColumnConflict(candidate, previous))
+    }
+
     @Test
     fun boundedSamplerRejectsIncompleteTail() {
         // For bound 3, 2^32 - 1 is the first value outside the divisible range.
