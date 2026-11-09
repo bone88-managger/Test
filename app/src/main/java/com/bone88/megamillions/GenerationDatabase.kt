@@ -68,28 +68,38 @@ internal class GenerationDatabase(context: Context) :
         }
 
         val db = writableDatabase
+        var expectedAccepted = 0
+        var expectedRejected = 0
+        var expectedGenerated = 0
         db.beginTransaction()
         try {
             if (!generatedJson.isNullOrBlank()) {
                 JsonReader(StringReader(generatedJson)).use { reader ->
                     reader.beginArray()
-                    while (reader.hasNext()) insertLegacyDraw(reader, db)
+                    while (reader.hasNext()) if (insertLegacyDraw(reader, db)) expectedGenerated++
                     reader.endArray()
                 }
             }
             legacyLogInput?.let { input ->
                 JsonReader(InputStreamReader(input, Charsets.UTF_8)).use { reader ->
                     reader.beginArray()
-                    while (reader.hasNext()) insertLegacyRecord(reader, db)
+                    while (reader.hasNext()) {
+                        if (insertLegacyRecord(reader, db)) expectedAccepted++ else expectedRejected++
+                    }
                     reader.endArray()
                 }
             }
 
             val acceptedCount = countIn(db, true)
             val rejectedCount = countIn(db, false)
-            // Count verification is exact for log rows; JSON is streamed one object at a time.
-            check(acceptedCount + rejectedCount >= 0) {
-                "No se pudo verificar el historial de generaciones migrado."
+            val generatedCount = db.rawQuery("SELECT COUNT(*) FROM generated_draws", null).use {
+                if (it.moveToFirst()) it.getInt(0) else 0
+            }
+            check(acceptedCount == expectedAccepted && rejectedCount == expectedRejected) {
+                "No se pudo verificar el total de registros aceptados y rechazados migrados."
+            }
+            check(generatedCount == expectedGenerated) {
+                "No se pudo verificar el total de combinaciones generadas migradas."
             }
             putMetadata(db, "legacy_migration_v1", "done")
             db.setTransactionSuccessful()
@@ -99,7 +109,7 @@ internal class GenerationDatabase(context: Context) :
         }
     }
 
-    private fun insertLegacyDraw(reader: JsonReader, db: SQLiteDatabase) {
+    private fun insertLegacyDraw(reader: JsonReader, db: SQLiteDatabase): Boolean {
         var date = ""
         var white: List<Int> = emptyList()
         var mega = -1
@@ -116,10 +126,10 @@ internal class GenerationDatabase(context: Context) :
         require(date.isNotBlank() && white.size == 5 && isValidDrawNumbers(white, mega)) {
             "El historial heredado de combinaciones generadas contiene un registro inválido."
         }
-        insertDraw(db, Draw(date, white, mega))
+        return insertDraw(db, Draw(date, white, mega))
     }
 
-    private fun insertLegacyRecord(reader: JsonReader, db: SQLiteDatabase) {
+    private fun insertLegacyRecord(reader: JsonReader, db: SQLiteDatabase): Boolean {
         var timestamp = 0L
         var attempt = 0
         var white: List<Int> = emptyList()
@@ -143,6 +153,7 @@ internal class GenerationDatabase(context: Context) :
             "El registro heredado de generaciones contiene una combinación inválida."
         }
         insertRecord(db, GenerationRecord(timestamp, attempt, white, mega, accepted, reason))
+        return accepted
     }
 
     private fun readLegacyWhite(reader: JsonReader): List<Int> {
@@ -262,9 +273,8 @@ internal class GenerationDatabase(context: Context) :
         })
     }
 
-    private fun insertDraw(db: SQLiteDatabase, draw: Draw) {
-        db.insertWithOnConflict("generated_draws", null, drawValues(draw), SQLiteDatabase.CONFLICT_IGNORE)
-    }
+    private fun insertDraw(db: SQLiteDatabase, draw: Draw): Boolean =
+        db.insertWithOnConflict("generated_draws", null, drawValues(draw), SQLiteDatabase.CONFLICT_IGNORE) != -1L
 
     private fun drawValues(draw: Draw) = ContentValues().apply {
         put("date", draw.date)
