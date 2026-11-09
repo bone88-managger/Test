@@ -317,3 +317,56 @@ Pendiente de verificación:
 - [ ] Confirmar que las pruebas unitarias Android pasan.
 - [ ] Confirmar que el workflow Android APK compila y publica el APK.
 - [ ] Instalar el APK y verificar en el teléfono que una coincidencia posicional permite y dos coincidencias posicionales rechazan.
+
+
+## 15. Acciones separadas para borrar los historiales (2026-11-09)
+
+El usuario aprobó añadir un botón independiente para borrar los registros aceptados y otro para borrar los rechazados. También confirmó que entiende y acepta el efecto sobre la memoria de la aplicación:
+- Al borrar los aceptados, esas combinaciones dejan de estar guardadas y podrán volver a aceptarse si se generan otra vez.
+- Al borrar los rechazados, esas combinaciones dejan de estar marcadas como rechazadas y se evaluarán nuevamente desde cero.
+- El borrado de una categoría no debe borrar la otra.
+- La acción debe pedir confirmación antes de eliminar.
+
+Cambio registrado en GitHub:
+- Commit: `5760a7b597b95de0197f1da6b3a6245ed056f2bf`
+- Mensaje del commit: `Add separate confirmed clear-history actions`
+- Rama: `feature/mega-millions-simulator`
+- La ejecución `Tests` #85 (run `42685493023`) terminó con `success`.
+- La ejecución `Android APK` #72 (run `42685493243`) terminó con `success`.
+- La compilación APK de ese commit quedó verificada como exitosa en GitHub Actions. No consta todavía una prueba del usuario en su teléfono de los botones de borrado.
+
+Verificación pendiente:
+- [x] ~~Añadir acciones independientes y confirmadas para borrar aceptados y rechazados.~~ — Completada: 2026-11-09 15:46:16 UTC-04:00
+- [x] ~~Confirmar que las pruebas automatizadas pasan para el commit de los botones de borrado.~~ — Completada: 2026-11-09 15:46:16 UTC-04:00
+- [x] ~~Confirmar que GitHub Actions compila el APK del commit de los botones de borrado.~~ — Completada: 2026-11-09 15:46:16 UTC-04:00
+- [ ] Instalar el APK y probar ambos botones en el teléfono; confirmar que borrar una categoría no afecta a la otra.
+
+## 16. Optimización del almacenamiento de aceptados y rechazados — pendiente
+
+El usuario aprobó una mejora para evitar mantener decenas de miles de registros en memoria:
+- Migrar los historiales de aceptados y rechazados a una base de datos local SQLite.
+- Migrar los datos existentes de forma segura, sin perder los registros anteriores.
+- Consultar en la base de datos si una combinación blanca ya está guardada/rechazada; comparar y guardar únicamente registros nuevos.
+- No cargar todo el historial de rechazos en RAM durante la generación.
+- Mostrar el historial por páginas (por ejemplo, 50 registros por carga), en lugar de cargar los aproximadamente 90.000 rechazos de una sola vez.
+- Conservar los dos botones independientes para borrar aceptados y rechazados, ejecutando el borrado directamente en el almacenamiento persistente.
+- No cambiar las reglas de generación, comparación por columna, ni la importación PDF/CSV como parte de esta optimización.
+
+Estado real al actualizar estas notas:
+- La implementación SQLite y la migración todavía NO están hechas.
+- La paginación del historial todavía NO está implementada.
+- La compilación exitosa del commit anterior solo verifica los botones de borrado; no significa que la optimización SQLite esté lista.
+- No afirmar que la optimización está terminada hasta revisar el código, migrar de forma segura, probar consultas y borrados, y compilar el APK.
+
+Tareas:
+- [ ] Diseñar e implementar almacenamiento SQLite para aceptados y rechazados.
+- [ ] Migrar de forma transaccional el archivo `generation_log.json` y las combinaciones aceptadas existentes; no eliminar el origen hasta verificar la migración completa.
+- [ ] Cambiar la generación para consultar duplicados/rechazos en SQLite sin cargar todos los registros en memoria.
+- [ ] Guardar únicamente los nuevos registros, sin reescribir el historial completo.
+- [ ] Implementar paginación del historial (50 registros por página o carga incremental equivalente).
+- [ ] Mantener los botones de borrado separados y confirmar que cada uno borra exclusivamente su categoría y actualiza su protección correspondiente.
+- [ ] Añadir pruebas de migración, consulta, paginación y borrado selectivo.
+- [ ] Ejecutar las pruebas y confirmar una nueva compilación APK exitosa.
+- [ ] Instalar y probar la nueva versión en el teléfono antes de marcar la tarea como terminada.
+
+Última actualización de este documento: 2026-11-09 15:46:16 UTC-04:00.
