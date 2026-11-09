@@ -230,6 +230,29 @@ internal class GenerationDatabase(context: Context) :
     fun hasGeneratedWhiteKey(whiteKey: String): Boolean =
         exists("SELECT 1 FROM generated_draws WHERE white_key=? LIMIT 1", arrayOf(whiteKey))
 
+    fun hasAcceptedWhiteKey(whiteKey: String): Boolean =
+        exists("SELECT 1 FROM generation_log WHERE accepted=1 AND white_key=? LIMIT 1", arrayOf(whiteKey))
+
+    fun hasAcceptedColumnConflict(white: List<Int>): Boolean {
+        require(white.size == 5)
+        val sql = """SELECT 1 FROM generation_log WHERE accepted=1
+            AND (white1=?)+(white2=?)+(white3=?)+(white4=?)+(white5=?) >= 2 LIMIT 1"""
+        return exists(sql, white.map { it.toString() }.toTypedArray())
+    }
+
+    fun insertGenerationBatch(records: List<GenerationRecord>, acceptedDraw: Draw? = null) {
+        if (records.isEmpty() && acceptedDraw == null) return
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            records.forEach { insertRecord(db, it) }
+            acceptedDraw?.let { insertDraw(db, it) }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun hasRejectedWhiteKey(whiteKey: String): Boolean =
         exists("SELECT 1 FROM generation_log WHERE accepted=0 AND white_key=? LIMIT 1", arrayOf(whiteKey))
 
