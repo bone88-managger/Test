@@ -23,7 +23,7 @@ class SecureLotteryRandomTest {
         assertEquals(1, result.columns[0].lower)
         assertEquals(0, result.columns[0].equal)
         assertEquals(mapOf(-2 to 1, 3 to 1), result.columns[0].intervals)
-        assertEquals("Empate", result.columns[2].leadingDirection)
+        assertEquals("Mayor", result.columns[2].leadingDirection)
     }
 
     @Test
