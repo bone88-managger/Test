@@ -535,3 +535,21 @@ Actualización: 2026-11-09 16:39:07 UTC-04:00.
 La integración ya está compilada y las pruebas automatizadas pasan. Falta la prueba de uso real en el dispositivo: abrir la aplicación con los historiales existentes, confirmar que la migración conserva los registros, generar varias combinaciones, revisar paginación y probar los dos borrados independientes. No considerar esa validación manual como completada hasta recibir el resultado de la prueba en el teléfono.
 
 Actualización: 2026-11-09 16:40:00 UTC-04:00.
+
+
+## 24. Confirmación del usuario: continuar con validación en dispositivo (2026-11-09)
+
+El usuario pidió actualizar nuevamente este documento después de confirmar que la compilación Android APK #114 y las pruebas #127 finalizaron correctamente.
+
+Estado al cierre de esta actualización:
+- [x] ~~Registrar la compilación APK y las pruebas automatizadas exitosas.~~ — Se conserva el registro de la sección 23; commit de código verificado: `f655c7c20c9534871ebe736a8629e8dcf71b8197`.
+- [ ] El usuario debe instalar/abrir la APK en el teléfono y confirmar que la aplicación inicia sin cerrarse.
+- [ ] Comprobar que los historiales previos se migran y conservan íntegramente.
+- [ ] Probar varias generaciones y confirmar que no se repiten las bolas blancas ya aceptadas ni se vuelven a registrar como nuevos rechazos las combinaciones rechazadas anteriormente.
+- [ ] Probar paginación de 50 registros en aceptados y rechazados.
+- [ ] Probar por separado los botones de borrar aceptados y borrar rechazados, verificando que cada uno conserva el otro historial.
+- [ ] Corregir cualquier incidencia reportada y repetir pruebas y compilación si se modifica código.
+
+No se declara terminada la validación de uso real hasta que el usuario comunique los resultados de estas pruebas.
+
+Actualización: 2026-11-09 16:41:00 UTC-04:00.
