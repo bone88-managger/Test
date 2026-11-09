@@ -423,3 +423,29 @@ Estado:
 - [ ] Añadir/verificar pruebas y compilar una nueva APK.
 
 Actualización: 2026-11-09 16:34:26 UTC-04:00.
+
+
+## 19. Primera fase de migración SQLite implementada (2026-11-09)
+
+Cambios realizados en esta fase:
+- La aplicación ahora inicia la migración antes de abrir el simulador.
+- Los registros de generation_log.json se leen con JsonReader, uno por uno, sin construir primero una lista de todos los rechazos.
+- Las combinaciones generadas de SharedPreferences se recorren desde el JSON y se insertan en SQLite una por una.
+- La importación se ejecuta dentro de una transacción. Si el JSON está dañado, contiene registros inválidos o falla una inserción/verificación, la transacción se revierte y los datos heredados permanecen intactos.
+- Se comprueban los totales de aceptados, rechazados y combinaciones insertadas antes de marcar la migración como completada.
+- La aplicación muestra un error de migración en vez de continuar silenciosamente con datos incompletos.
+
+Commits de implementación:
+- Inicio de migración al arrancar: 0f54941805c931d4f3c773d70305513dfc9b0a8d
+- Verificación transaccional y lectura progresiva: 2bae35fb8cec115068acf3df62f261313afa07b6
+- Validación de fin de archivo JSON: 43721a9cc5baaf1900ad3b0a4245b247150966ed
+
+**Limitación importante:** la pantalla todavía carga los historiales completos desde los archivos heredados después de la migración. La generación y los historiales aún no consultan SQLite directamente. Esta APK intermedia no debe considerarse la versión final ni instalarse como solución terminada.
+
+Verificación:
+- [x] ~~Implementar lectura progresiva de los datos heredados y migración transaccional con verificación.~~ — Código escrito en GitHub: 2026-11-09 16:36:04 UTC-04:00
+- [x] ~~Pruebas automatizadas para el commit 2bae35fb8cec115068acf3df62f261313afa07b6.~~ — GitHub Actions Tests #104 y #105: success.
+- [ ] Confirmar pruebas y compilación para el commit más reciente 43721a9cc5baaf1900ad3b0a4245b247150966ed.
+- [ ] Conectar generación, paginación y borrado selectivo directamente a SQLite.
+
+Actualización: 2026-11-09 16:36:04 UTC-04:00.
