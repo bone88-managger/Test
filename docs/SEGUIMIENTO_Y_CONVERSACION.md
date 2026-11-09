@@ -296,3 +296,24 @@ Pendiente de verificación:
 - [ ] Confirmar que las pruebas Android pasan.
 - [ ] Confirmar que el workflow Android APK compila y publica el APK.
 - [ ] Instalar el APK y comprobar el ejemplo aprobado en el teléfono.
+
+
+## 14. Ajuste del límite de coincidencias por columna (2026-11-09)
+
+Nueva decisión del usuario:
+- Se permite como máximo **1 coincidencia** en la misma columna entre dos combinaciones.
+- Se rechaza una candidata cuando coincide en **2 o más columnas** con cualquier sorteo del historial o combinación generada anteriormente.
+- Las coincidencias se cuentan solo cuando el mismo número está en la misma posición/columna; las bolas blancas se mantienen ordenadas ascendentemente.
+- La Mega Ball continúa excluida.
+- No se modifica el bloqueo de duplicados ni ninguna otra función.
+
+Implementación:
+- Se cambió el umbral del filtro posicional de más de 2 a más de 1 coincidencia.
+- Se actualizaron el texto visible de reglas y el motivo registrado para los rechazos.
+- Se actualizaron las pruebas para verificar que 1 coincidencia permite, 2 rechazan y 3 rechazan; también se conserva la prueba de números compartidos en columnas diferentes.
+- Se mantiene el filtro contra el historial oficial y las combinaciones generadas anteriormente.
+
+Pendiente de verificación:
+- [ ] Confirmar que las pruebas unitarias Android pasan.
+- [ ] Confirmar que el workflow Android APK compila y publica el APK.
+- [ ] Instalar el APK y verificar en el teléfono que una coincidencia posicional permite y dos coincidencias posicionales rechazan.
