@@ -399,7 +399,7 @@ private fun SimulatorScreen(
                             require(maxAttempts in 1..MAX_ALLOWED_ATTEMPTS) {
                                 "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
                             }
-                            val result = generateCandidate(history, generated, maxAttempts)
+                            val result = generateCandidate(history, generated, generationLog, maxAttempts)
                             generationLog = generationLog + result.records
                             if (result.candidate != null) {
                                 generated = generated + result.candidate
@@ -486,13 +486,20 @@ private fun NumberBall(value: String, mega: Boolean = false) {
 private fun generateCandidate(
     history: List<Draw>,
     generated: List<Draw>,
+    previousLog: List<GenerationRecord>,
     maxAttempts: Int
 ): GenerationResult {
     val knownKeys = (history + generated).map { it.key }.toHashSet()
+    val rejectedWhiteKeys = previousLog.asSequence()
+        .filter { !it.accepted }
+        .map { it.white.sorted().joinToString(",") }
+        .toHashSet()
     val records = mutableListOf<GenerationRecord>()
 
     for (attempt in 1..maxAttempts) {
         val white = SecureLotteryRandom.sampleWhite()
+        val whiteKey = white.sorted().joinToString(",")
+        if (whiteKey in rejectedWhiteKeys) continue
         val mega = SecureLotteryRandom.sampleMega()
         val candidate = Draw("SIMULADO", white, mega)
 
@@ -516,6 +523,7 @@ private fun generateCandidate(
             accepted = accepted,
             reason = reason
         )
+        if (!accepted) rejectedWhiteKeys += whiteKey
 
         if (accepted) return GenerationResult(candidate, records)
     }
