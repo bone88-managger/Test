@@ -75,7 +75,7 @@ internal fun hasWhiteColumnConflict(candidate: Draw, other: Draw): Boolean =
 internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): Boolean =
     history.any { old -> hasWhiteColumnConflict(candidate, old) }
 
-private data class GenerationRecord(
+internal data class GenerationRecord(
     val timestamp: Long,
     val attempt: Int,
     val white: List<Int>,
