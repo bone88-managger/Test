@@ -18,10 +18,17 @@ class SecureLotteryRandomTest {
         assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4), 12))
     }
     @Test
-    fun historicalFilterAllowsExactlyTwoWhiteBallMatches() {
+    fun historicalFilterAllowsExactlyOneWhiteBallMatch() {
+        val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
+        val history = listOf(Draw("past", listOf(1, 9, 6, 7, 8), 20))
+        assertFalse(hasHistoricalWhiteConflict(candidate, history))
+    }
+
+    @Test
+    fun historicalFilterRejectsExactlyTwoWhiteBallMatches() {
         val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
         val history = listOf(Draw("past", listOf(1, 2, 6, 7, 8), 20))
-        assertFalse(hasHistoricalWhiteConflict(candidate, history))
+        assertTrue(hasHistoricalWhiteConflict(candidate, history))
     }
 
     @Test
@@ -57,10 +64,17 @@ class SecureLotteryRandomTest {
     }
 
     @Test
-    fun columnFilterAllowsOnlyTwoMatchesInTheSamePositions() {
+    fun columnFilterAllowsOnlyOneMatchInTheSamePositions() {
+        val candidate = Draw("candidate", listOf(10, 26, 32, 45, 50), 12)
+        val previous = Draw("previous", listOf(10, 20, 35, 40, 60), 20)
+        assertFalse(hasWhiteColumnConflict(candidate, previous))
+    }
+
+    @Test
+    fun columnFilterRejectsTwoMatchesInTheSamePositions() {
         val candidate = Draw("candidate", listOf(10, 26, 32, 45, 50), 12)
         val previous = Draw("previous", listOf(10, 26, 35, 40, 60), 20)
-        assertFalse(hasWhiteColumnConflict(candidate, previous))
+        assertTrue(hasWhiteColumnConflict(candidate, previous))
     }
 
     @Test
