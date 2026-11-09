@@ -471,3 +471,34 @@ Estado:
 - [ ] Confirmar pruebas y APK final.
 
 Actualización: 2026-11-09 16:36:23 UTC-04:00.
+
+
+## 21. Generador y pantallas conectados a SQLite (2026-11-09)
+
+Avance de la siguiente fase:
+- El generador ahora consulta SQLite para evitar combinaciones blancas ya aceptadas y para saltar combinaciones previamente rechazadas sin volver a registrarlas.
+- La comparación de duplicados usa exclusivamente las cinco bolas blancas. La Mega Ball no participa.
+- Los conflictos posicionales se consultan tanto en el historial oficial importado como en las combinaciones aceptadas guardadas en SQLite.
+- Los rechazos se insertan en lotes de 250 registros para limitar el uso de memoria.
+- La combinación aceptada y su registro se guardan en la misma transacción.
+- La pantalla principal y la pantalla de rechazos cargan 50 registros por página; el usuario puede cargar más cuando lo necesite.
+- Los conteos de aceptados, rechazados y combinaciones protegidas se consultan directamente en SQLite.
+- Los botones de borrado independiente ahora borran directamente en SQLite y actualizan los conteos/páginas correspondientes.
+- La generación y las operaciones de base de datos se ejecutan fuera del hilo de interfaz.
+
+Cambios relevantes:
+- Conexión de generación y pantallas a SQLite: commits 337a0b3a2c168bc114bfcccfd92666e3026ddf09 y 53479fbb04231033f58d5092ff3fed2085fc6283.
+- Consultas de aceptados y guardado transaccional por lotes: commit 6c362e4e8f9c71532ac9087ae5abbbdf8c3fec7f.
+- Comparación explícita de duplicados solo por bolas blancas: commit 80ce5892391c9ccbf600c55813064617a8e27dac.
+- Pruebas añadidas para confirmar que Mega Ball no cambia la detección de duplicados y que las cinco blancas deben coincidir en sus posiciones.
+
+Verificación:
+- [x] ~~Pruebas automatizadas del commit 4014104cba816ed3569b89fcf3302a73fd7a66f0.~~ — GitHub Actions Tests #116 y #117: success.
+- [ ] Confirmar pruebas automatizadas del commit más reciente 80ce5892391c9ccbf600c55813064617a8e27dac.
+- [ ] Confirmar compilación APK del commit más reciente.
+- [ ] Revisar resultados de uso y posibles errores en el teléfono antes de considerar final la integración.
+
+Limitación pendiente:
+- El historial oficial importado continúa en memoria, como antes. Los historiales generados/aceptados/rechazados ya usan páginas SQLite y no se cargan completos al iniciar.
+
+Actualización: 2026-11-09 16:38:00 UTC-04:00.
