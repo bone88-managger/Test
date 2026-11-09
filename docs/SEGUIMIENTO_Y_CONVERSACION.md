@@ -395,4 +395,4 @@ Tareas inmediatas:
 - [ ] Conectar borrado selectivo y escrituras incrementales a SQLite.
 - [ ] Añadir pruebas y confirmar compilación Android.
 
-Actualización: 2026-11-09 16:xx UTC-04:00 (hora exacta pendiente de confirmar al registrar el siguiente commit).
+Actualización: 2026-11-09 15:59:17 UTC-04:00.
