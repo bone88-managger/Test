@@ -521,3 +521,17 @@ Estado:
 - [ ] Verificar en el teléfono la migración de historiales grandes, la generación y los dos botones de borrado.
 
 Actualización: 2026-11-09 16:39:07 UTC-04:00.
+
+
+## 23. Compilación APK e integración SQLite verificadas (2026-11-09)
+
+- [x] ~~Pruebas automatizadas del commit f655c7c20c9534871ebe736a8629e8dcf71b8197.~~ — GitHub Actions Tests #127: success.
+- [x] ~~Compilación Android APK del commit f655c7c20c9534871ebe736a8629e8dcf71b8197.~~ — GitHub Actions Android APK #114: success.
+- [x] ~~Confirmar que el workflow publicó el artefacto APK.~~ — Artefacto `mega-millions-debug-apk`, disponible y no expirado.
+- APK: https://github.com/bone88-managger/Test/actions/runs/42695028349
+- Pruebas: https://github.com/bone88-managger/Test/actions/runs/42695028340
+- Commit verificado: f655c7c20c9534871ebe736a8629e8dcf71b8197.
+
+La integración ya está compilada y las pruebas automatizadas pasan. Falta la prueba de uso real en el dispositivo: abrir la aplicación con los historiales existentes, confirmar que la migración conserva los registros, generar varias combinaciones, revisar paginación y probar los dos borrados independientes. No considerar esa validación manual como completada hasta recibir el resultado de la prueba en el teléfono.
+
+Actualización: 2026-11-09 16:40:00 UTC-04:00.
