@@ -146,12 +146,12 @@ class MainActivity : ComponentActivity() {
             try {
                 val initialData = withContext(Dispatchers.IO) {
                     val database = GenerationDatabase(applicationContext)
-                    val legacyGenerated = readDrawsStrict("generated")
-                    val legacyLog = readGenerationLogStrict()
+                    val legacyLogExists = fileList().contains("generation_log.json")
+                    val legacyLogInput = if (legacyLogExists) openFileInput("generation_log.json") else null
                     database.migrateLegacy(
-                        generated = legacyGenerated,
-                        log = legacyLog,
-                        legacyLogExists = fileList().contains("generation_log.json")
+                        generatedJson = prefs.getString("generated", null),
+                        legacyLogInput = legacyLogInput,
+                        legacyLogExists = legacyLogExists
                     )
                     Triple(readDraws("history"), database.allGenerated(), readGenerationLog())
                 }
@@ -197,19 +197,6 @@ class MainActivity : ComponentActivity() {
             }
         } catch (_: Exception) { emptyList() }
     }    
-    private fun readDrawsStrict(key: String): List<Draw> {
-        val raw = prefs.getString(key, null) ?: return emptyList()
-        val array = JSONArray(raw)
-        return (0 until array.length()).map { i ->
-            val item = array.getJSONObject(i)
-            val nums = item.getJSONArray("white")
-            val draw = Draw(item.getString("date"), (0 until nums.length()).map { nums.getInt(it) }, item.getInt("mega"))
-            require(draw.white.size == 5 && isValidDrawNumbers(draw.white, draw.mega)) {
-                "El historial heredado de combinaciones generadas contiene un registro inválido."
-            }
-            draw
-        }
-    }
 
     private fun saveDraws(key: String, draws: List<Draw>) {
         val array = JSONArray()
@@ -221,30 +208,26 @@ class MainActivity : ComponentActivity() {
         prefs.edit().putString(key, array.toString()).apply()
     }
 
-    private fun readGenerationLogStrict(): List<GenerationRecord> {
-        if (!fileList().contains("generation_log.json")) return emptyList()
-        val raw = openFileInput("generation_log.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
-        val array = JSONArray(raw)
-        return (0 until array.length()).map { index ->
-            val item = array.getJSONObject(index)
-            val numbers = item.getJSONArray("white")
-            val white = (0 until numbers.length()).map { numbers.getInt(it) }
-            require(white.size == 5 && isValidDrawNumbers(white, item.getInt("mega"))) {
-                "El registro heredado de generaciones contiene una combinación inválida."
+    private fun readGenerationLog(): List<GenerationRecord> {
+        return try {
+            val raw = openFileInput("generation_log.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val array = JSONArray(raw)
+            (0 until array.length()).map { index ->
+                val item = array.getJSONObject(index)
+                val numbers = item.getJSONArray("white")
+                GenerationRecord(
+                    timestamp = item.getLong("timestamp"),
+                    attempt = item.getInt("attempt"),
+                    white = (0 until numbers.length()).map { numbers.getInt(it) },
+                    mega = item.getInt("mega"),
+                    accepted = item.getBoolean("accepted"),
+                    reason = item.getString("reason")
+                )
             }
-            GenerationRecord(
-                timestamp = item.getLong("timestamp"),
-                attempt = item.getInt("attempt"),
-                white = white,
-                mega = item.getInt("mega"),
-                accepted = item.getBoolean("accepted"),
-                reason = item.getString("reason")
-            )
+        } catch (_: Exception) {
+            emptyList()
         }
     }
-
-    private fun readGenerationLog(): List<GenerationRecord> =
-        try { readGenerationLogStrict() } catch (_: Exception) { emptyList() }
 
     private fun saveGenerationLog(records: List<GenerationRecord>) {
         val array = JSONArray()
