@@ -18,6 +18,29 @@ class SecureLotteryRandomTest {
         assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4), 12))
     }
     @Test
+    fun historicalFilterAllowsExactlyTwoWhiteBallMatches() {
+        val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
+        val history = listOf(Draw("past", listOf(1, 2, 6, 7, 8), 20))
+        assertFalse(hasHistoricalWhiteConflict(candidate, history))
+    }
+
+    @Test
+    fun historicalFilterRejectsThreeWhiteBallMatches() {
+        val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
+        val history = listOf(Draw("past", listOf(1, 2, 3, 6, 7), 20))
+        assertTrue(hasHistoricalWhiteConflict(candidate, history))
+    }
+
+    @Test
+    fun megaBallValuesNeverCountAsHistoricalMatches() {
+        // Candidate Mega Ball equals a historical white ball; historical Mega Ball
+        // equals a candidate white ball. Neither cross-match may count.
+        val candidate = Draw("candidate", listOf(1, 2, 3, 4, 5), 12)
+        val history = listOf(Draw("past", listOf(12, 13, 14, 15, 16), 1))
+        assertFalse(hasHistoricalWhiteConflict(candidate, history))
+    }
+
+    @Test
     fun boundedSamplerRejectsIncompleteTail() {
         // For bound 3, 2^32 - 1 is the first value outside the divisible range.
         assertNull(SecureLotteryRandom.mapUnsignedToBound(4_294_967_295L, 3))
