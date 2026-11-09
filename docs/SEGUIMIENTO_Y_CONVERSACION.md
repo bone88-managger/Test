@@ -32,9 +32,9 @@ Estos son los diez requisitos que el usuario aprobó. La numeración corresponde
 ### Regla histórica aprobada
 
 - Se eligió el historial completo (ALL).
-- El criterio conversado fue no aceptar una combinación que tenga más de dos coincidencias numéricas con cualquier sorteo del historial.
+- Se rechaza una combinación si tiene más de dos coincidencias entre sus cinco bolas blancas y las cinco bolas blancas de cualquier sorteo del historial.
+- La Mega Ball no cuenta como coincidencia, aunque su valor numérico coincida con una bola blanca. Tampoco se compara la Mega Ball del candidato para este filtro.
 - La generación debe ser independiente del historial; el historial solo se usa después para filtrar.
-- Antes de cambiar cómo se cuentan coincidencias (por ejemplo, si se distingue el tipo de bola o se comparan los seis valores como conjunto), confirmar el criterio con el usuario o respetar exactamente el comportamiento previo del proyecto.
 
 ## 3. Decisiones rechazadas o aplazadas — conservar como historial
 
@@ -219,8 +219,8 @@ Revisión estática de `MainActivity.kt`:
 **Filtro histórico ALL**
 - Cada candidato se genera primero sin consultar el historial.
 - Después se compara con todas las filas de `history`.
-- El código reúne los seis valores numéricos de cada sorteo en conjuntos y rechaza cuando la intersección supera dos valores.
-- Esto significa que una bola blanca del candidato puede coincidir numéricamente con la Mega Ball histórica y viceversa. Se conserva como comportamiento actual; no cambiar sin confirmar el criterio con el usuario.
+- En la versión auditada, el código reunía los seis valores numéricos de cada sorteo en conjuntos y rechazaba cuando la intersección superaba dos valores.
+- El usuario aclaró el criterio correcto: **solo se comparan las cinco bolas blancas contra las cinco bolas blancas**; la Mega Ball queda completamente excluida del conteo de coincidencias. La implementación actual debe revisarse y, si corresponde, corregirse antes de considerar este filtro conforme al requisito.
 - La búsqueda se detiene al encontrar el primer sorteo conflictivo, lo cual es suficiente para rechazar el candidato.
 
 **Duplicados**
@@ -245,7 +245,8 @@ Revisión estática de `MainActivity.kt`:
 - No se encontraron pruebas unitarias específicas para filtro histórico, duplicados, límite de intentos ni persistencia.
 
 Pendiente de la auditoría:
-- [ ] Añadir pruebas deterministas para filtro ALL, incluidos los límites de 2 y 3 coincidencias y la comparación numérica entre tipos de bola, una vez confirmado el criterio.
+- [ ] Corregir/verificar el filtro ALL para comparar exclusivamente las cinco bolas blancas de cada combinación; excluir siempre la Mega Ball del conteo.
+- [ ] Añadir pruebas deterministas para filtro ALL: exactamente 2 coincidencias blancas debe permitir el candidato; 3 debe rechazarlo; coincidencias de valor entre bola blanca y Mega Ball no deben contar.
 - [ ] Añadir pruebas para duplicados con blancas en distinto orden y Mega Ball distinta/igual.
 - [ ] Añadir pruebas para el límite de intentos, verificando que no se aceptan candidatos inválidos al agotarlo.
 - [ ] Probar en el teléfono que combinaciones aceptadas y registro sobreviven al cierre forzado/reapertura y a reimportar el historial.
