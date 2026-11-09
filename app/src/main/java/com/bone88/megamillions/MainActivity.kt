@@ -76,6 +76,9 @@ internal fun hasWhiteColumnConflict(candidate: Draw, other: Draw): Boolean =
 internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): Boolean =
     history.any { old -> hasWhiteColumnConflict(candidate, old) }
 
+internal fun hasWhiteBallDuplicate(candidate: Draw, history: List<Draw>): Boolean =
+    history.any { old -> old.white == candidate.white }
+
 internal data class GenerationRecord(
     val timestamp: Long,
     val attempt: Int,
@@ -655,7 +658,7 @@ private fun generateCandidate(
         if (whiteKey in bufferedRejectedKeys || database.hasRejectedWhiteKey(whiteKey)) continue
 
         val candidate = Draw("SIMULADO", white, SecureLotteryRandom.sampleMega())
-        val duplicate = history.any { it.white == white } ||
+        val duplicate = hasWhiteBallDuplicate(candidate, history) ||
             database.hasGeneratedWhiteKey(whiteKey) ||
             database.hasAcceptedWhiteKey(whiteKey)
         val conflictingDraw = if (duplicate) false else
