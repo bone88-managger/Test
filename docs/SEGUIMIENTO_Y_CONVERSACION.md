@@ -445,7 +445,29 @@ Commits de implementación:
 Verificación:
 - [x] ~~Implementar lectura progresiva de los datos heredados y migración transaccional con verificación.~~ — Código escrito en GitHub: 2026-11-09 16:36:04 UTC-04:00
 - [x] ~~Pruebas automatizadas para el commit 2bae35fb8cec115068acf3df62f261313afa07b6.~~ — GitHub Actions Tests #104 y #105: success.
-- [ ] Confirmar pruebas y compilación para el commit más reciente 43721a9cc5baaf1900ad3b0a4245b247150966ed.
-- [ ] Conectar generación, paginación y borrado selectivo directamente a SQLite.
+- [x] ~~Confirmar pruebas automatizadas para el commit 43721a9cc5baaf1900ad3b0a4245b247150966ed.~~ — GitHub Actions Tests #106 y #107: success, 2026-11-09 16:36:23 UTC-04:00\n- [ ] Confirmar compilación APK para el commit 43721a9cc5baaf1900ad3b0a4245b247150966ed.
+- [ ] Conectar el generador a consultas SQLite y escrituras incrementales.\n- [ ] Conectar pantallas a páginas de 50 registros, conteos y borrado selectivo.
 
 Actualización: 2026-11-09 16:36:04 UTC-04:00.
+
+
+## 20. Siguiente fase: conectar el generador a SQLite
+
+Una vez implementada la migración segura, el siguiente trabajo aprobado es eliminar del generador la dependencia de las listas completas de combinaciones generadas y rechazos.
+
+Criterios obligatorios:
+- Consultar en SQLite los duplicados exactos de las cinco bolas blancas; Mega Ball no participa en la comparación.
+- Consultar en SQLite los rechazos previos por clave blanca y saltarlos sin volver a crear un registro de rechazo.
+- Consultar conflictos posicionales en combinaciones generadas almacenadas en SQLite y conservar la comparación con el historial oficial importado.
+- Insertar los nuevos registros por lotes pequeños y guardar la combinación aceptada junto con su registro de forma transaccional.
+- No modificar la regla de coincidencia posicional ni la importación PDF/CSV.
+- No mantener listas completas de aceptados/rechazados en memoria.
+
+Estado:
+- [ ] Conectar generación a consultas SQLite.
+- [ ] Guardar registros de generación por lotes y la combinación aceptada en una transacción.
+- [ ] Conectar pantallas a paginación de 50 y conteos SQLite.
+- [ ] Conectar borrado independiente a SQLite.
+- [ ] Confirmar pruebas y APK final.
+
+Actualización: 2026-11-09 16:36:23 UTC-04:00.
