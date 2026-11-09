@@ -135,8 +135,7 @@ internal fun analyzeOfficialDrawHistory(history: List<Draw>): HistoricalColumnAn
                 difference < 0 -> lower[column]++
                 else -> equal[column]++
             }
-            val interval = kotlin.math.abs(difference)
-            counts[column][interval] = (counts[column][interval] ?: 0) + 1
+            counts[column][difference] = (counts[column][difference] ?: 0) + 1
         }
     }
     val columns = (0 until WHITE_COUNT).map { column ->
@@ -542,7 +541,8 @@ private fun SimulatorScreen(
                                 val topInterval = column.mostFrequentInterval
                                 Text(
                                     if (topInterval == null) "Sin transiciones suficientes."
-                                    else "Intervalo más frecuente: diferencia de " + topInterval +
+                                    else "Intervalo más frecuente: " +
+                                        (if (topInterval > 0) "subió " + topInterval else if (topInterval < 0) "bajó " + kotlin.math.abs(topInterval) else "se mantuvo igual") +
                                         " (" + column.intervals[topInterval] + " veces)"
                                 )
                                 Text("Frecuencia de cada diferencia:", fontWeight = FontWeight.SemiBold)
@@ -550,7 +550,10 @@ private fun SimulatorScreen(
                                     Text("No hay datos.")
                                 } else {
                                     column.intervals.forEach { (difference, count) ->
-                                        Text("±" + difference + ": " + count + " veces")
+                                        Text(
+                                            (if (difference > 0) "Subió +" + difference else if (difference < 0) "Bajó " + kotlin.math.abs(difference) else "Igual") +
+                                                ": " + count + " veces"
+                                        )
                                     }
                                 }
                             }
