@@ -3,6 +3,7 @@ package com.bone88.megamillions
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -141,19 +142,46 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PDFBoxResourceLoader.init(applicationContext)
-        setContent {
-            MaterialTheme {
-                SimulatorScreen(
-                    initialHistory = readDraws("history"),
-                    initialGenerated = readDraws("generated"),
-                    initialLog = readGenerationLog(),
-                    onSave = { history, generated, log ->
-                        saveDraws("history", history)
-                        saveDraws("generated", generated)
-                        saveGenerationLog(log)
-                    },
-                    onImport = { uri -> importHistory(uri) }
-                )
+        lifecycleScope.launch {
+            try {
+                val initialData = withContext(Dispatchers.IO) {
+                    val database = GenerationDatabase(applicationContext)
+                    val legacyGenerated = readDrawsStrict("generated")
+                    val legacyLog = readGenerationLogStrict()
+                    database.migrateLegacy(
+                        generated = legacyGenerated,
+                        log = legacyLog,
+                        legacyLogExists = fileList().contains("generation_log.json")
+                    )
+                    Triple(readDraws("history"), database.allGenerated(), readGenerationLog())
+                }
+                setContent {
+                    MaterialTheme {
+                        SimulatorScreen(
+                            initialHistory = initialData.first,
+                            initialGenerated = initialData.second,
+                            initialLog = initialData.third,
+                            onSave = { history, generated, log ->
+                                saveDraws("history", history)
+                                saveDraws("generated", generated)
+                                saveGenerationLog(log)
+                            },
+                            onImport = { uri -> importHistory(uri) }
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                setContent {
+                    MaterialTheme {
+                        Surface(modifier = Modifier.fillMaxSize()) {
+                            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("No se pudo verificar la migración a SQLite.", fontWeight = FontWeight.Bold)
+                                Text("Los datos originales se conservaron. Cierra y vuelve a abrir la aplicación después de revisar el problema.")
+                                Text(e.message ?: "Error de lectura o almacenamiento.")
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -168,6 +196,19 @@ class MainActivity : ComponentActivity() {
                 Draw(item.getString("date"), (0 until nums.length()).map { nums.getInt(it) }, item.getInt("mega"))
             }
         } catch (_: Exception) { emptyList() }
+    }    
+    private fun readDrawsStrict(key: String): List<Draw> {
+        val raw = prefs.getString(key, null) ?: return emptyList()
+        val array = JSONArray(raw)
+        return (0 until array.length()).map { i ->
+            val item = array.getJSONObject(i)
+            val nums = item.getJSONArray("white")
+            val draw = Draw(item.getString("date"), (0 until nums.length()).map { nums.getInt(it) }, item.getInt("mega"))
+            require(draw.white.size == 5 && isValidDrawNumbers(draw.white, draw.mega)) {
+                "El historial heredado de combinaciones generadas contiene un registro inválido."
+            }
+            draw
+        }
     }
 
     private fun saveDraws(key: String, draws: List<Draw>) {
@@ -180,26 +221,30 @@ class MainActivity : ComponentActivity() {
         prefs.edit().putString(key, array.toString()).apply()
     }
 
-    private fun readGenerationLog(): List<GenerationRecord> {
-        return try {
-            val raw = openFileInput("generation_log.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
-            val array = JSONArray(raw)
-            (0 until array.length()).map { index ->
-                val item = array.getJSONObject(index)
-                val numbers = item.getJSONArray("white")
-                GenerationRecord(
-                    timestamp = item.getLong("timestamp"),
-                    attempt = item.getInt("attempt"),
-                    white = (0 until numbers.length()).map { numbers.getInt(it) },
-                    mega = item.getInt("mega"),
-                    accepted = item.getBoolean("accepted"),
-                    reason = item.getString("reason")
-                )
+    private fun readGenerationLogStrict(): List<GenerationRecord> {
+        if (!fileList().contains("generation_log.json")) return emptyList()
+        val raw = openFileInput("generation_log.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
+        val array = JSONArray(raw)
+        return (0 until array.length()).map { index ->
+            val item = array.getJSONObject(index)
+            val numbers = item.getJSONArray("white")
+            val white = (0 until numbers.length()).map { numbers.getInt(it) }
+            require(white.size == 5 && isValidDrawNumbers(white, item.getInt("mega"))) {
+                "El registro heredado de generaciones contiene una combinación inválida."
             }
-        } catch (_: Exception) {
-            emptyList()
+            GenerationRecord(
+                timestamp = item.getLong("timestamp"),
+                attempt = item.getInt("attempt"),
+                white = white,
+                mega = item.getInt("mega"),
+                accepted = item.getBoolean("accepted"),
+                reason = item.getString("reason")
+            )
         }
     }
+
+    private fun readGenerationLog(): List<GenerationRecord> =
+        try { readGenerationLogStrict() } catch (_: Exception) { emptyList() }
 
     private fun saveGenerationLog(records: List<GenerationRecord>) {
         val array = JSONArray()
