@@ -63,6 +63,23 @@ internal class GenerationDatabase(context: Context) :
         try {
             generated.forEach { insertDraw(db, it) }
             log.forEach { insertRecord(db, it) }
+
+            val acceptedCount = countIn(db, true)
+            val rejectedCount = countIn(db, false)
+            check(acceptedCount == log.count { it.accepted }) {
+                "No se pudo verificar el total de registros aceptados migrados."
+            }
+            check(rejectedCount == log.count { !it.accepted }) {
+                "No se pudo verificar el total de registros rechazados migrados."
+            }
+            val expectedGenerated = generated.map { it.white.sorted().joinToString(",") }.distinct().size
+            val actualGenerated = db.rawQuery("SELECT COUNT(*) FROM generated_draws", null).use {
+                if (it.moveToFirst()) it.getInt(0) else 0
+            }
+            check(actualGenerated == expectedGenerated) {
+                "No se pudo verificar el total de combinaciones generadas migradas."
+            }
+
             putMetadata(db, "legacy_migration_v1", "done")
             db.setTransactionSuccessful()
         } finally {
@@ -80,6 +97,12 @@ internal class GenerationDatabase(context: Context) :
             arrayOf(if (accepted) "1" else "0")
         ).use { cursor -> return if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
     }
+
+    private fun countIn(db: SQLiteDatabase, accepted: Boolean): Int =
+        db.rawQuery(
+            "SELECT COUNT(*) FROM generation_log WHERE accepted=?",
+            arrayOf(if (accepted) "1" else "0")
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
 
     fun page(accepted: Boolean, limit: Int = 50, offset: Int = 0): List<GenerationRecord> {
         require(limit in 1..500 && offset >= 0)
