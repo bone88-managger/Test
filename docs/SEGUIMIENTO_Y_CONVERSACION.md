@@ -502,3 +502,22 @@ Limitación pendiente:
 - El historial oficial importado continúa en memoria, como antes. Los historiales generados/aceptados/rechazados ya usan páginas SQLite y no se cargan completos al iniciar.
 
 Actualización: 2026-11-09 16:38:00 UTC-04:00.
+
+
+## 22. Verificación de la integración SQLite en curso (2026-11-09)
+
+- Se añadió una pantalla de espera mientras se verifica y migra el historial al iniciar, para evitar mostrar una pantalla vacía durante la operación.
+- Se deshabilitan la importación y el borrado de aceptados/rechazados mientras el generador está trabajando, evitando operaciones simultáneas conflictivas.
+- Se añadieron pruebas unitarias que confirman que dos combinaciones con las mismas cinco bolas blancas son duplicadas aunque tengan Mega Ball diferente, y que cambiar una bola blanca deja de ser duplicado.
+- GitHub Actions Tests #124 para el commit d440ddb40a6f085ef8a92a47c234f0b4fa423d93 terminó con success.
+- La compilación Android APK del mismo commit continúa en ejecución; no marcar como terminada ni entregar la APK hasta confirmar el resultado.
+
+Estado:
+- [x] ~~Conectar el generador a consultas SQLite y escrituras transaccionales por lotes.~~ — Código integrado.
+- [x] ~~Conectar los historiales aceptados/rechazados a páginas de 50 registros y conteos SQLite.~~ — Código integrado.
+- [x] ~~Conectar los botones de borrado independiente a SQLite.~~ — Código integrado.
+- [x] ~~Añadir pruebas para la regla de duplicado sin Mega Ball.~~ — GitHub Actions Tests #124: success, 2026-11-09 16:39:07 UTC-04:00.
+- [ ] Confirmar la compilación APK del commit d440ddb40a6f085ef8a92a47c234f0b4fa423d93.
+- [ ] Verificar en el teléfono la migración de historiales grandes, la generación y los dos botones de borrado.
+
+Actualización: 2026-11-09 16:39:07 UTC-04:00.
