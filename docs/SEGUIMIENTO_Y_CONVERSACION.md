@@ -245,11 +245,22 @@ Revisión estática de `MainActivity.kt`:
 - No se encontraron pruebas unitarias específicas para filtro histórico, duplicados, límite de intentos ni persistencia.
 
 Pendiente de la auditoría:
-- [ ] Corregir/verificar el filtro ALL para comparar exclusivamente las cinco bolas blancas de cada combinación; excluir siempre la Mega Ball del conteo.
-- [ ] Añadir pruebas deterministas para filtro ALL: exactamente 2 coincidencias blancas debe permitir el candidato; 3 debe rechazarlo; coincidencias de valor entre bola blanca y Mega Ball no deben contar.
+- [x] ~~Corregir/verificar el filtro ALL para comparar exclusivamente las cinco bolas blancas de cada combinación; excluir siempre la Mega Ball del conteo.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
+- [x] ~~Añadir pruebas deterministas para filtro ALL: exactamente 2 coincidencias blancas debe permitir el candidato; 3 debe rechazarlo; coincidencias de valor entre bola blanca y Mega Ball no deben contar.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
 - [ ] Añadir pruebas para duplicados con blancas en distinto orden y Mega Ball distinta/igual.
 - [ ] Añadir pruebas para el límite de intentos, verificando que no se aceptan candidatos inválidos al agotarlo.
 - [ ] Probar en el teléfono que combinaciones aceptadas y registro sobreviven al cierre forzado/reapertura y a reimportar el historial.
 - [ ] Definir cómo detectar y manejar almacenamiento local dañado sin borrar silenciosamente el registro ni la protección contra duplicados.
 
-No se modificó código de la aplicación durante esta auditoría inicial.
+Corrección implementada después de la auditoría inicial (2026-11-09):
+- El filtro ahora calcula la intersección exclusivamente entre `candidate.white` y `old.white`; rechaza si hay más de dos coincidencias blancas.
+- Se eliminó la propiedad auxiliar que combinaba blancas y Mega Ball para el filtro.
+- Se actualizó el texto de reglas y el motivo del rechazo para indicar coincidencias de bolas blancas.
+- Se añadieron tres pruebas deterministas: dos coincidencias permiten, tres rechazan y coincidencias cruzadas con Mega Ball no cuentan.
+- Commits: código `48091c561ddab61a26c2fb52b510c6e40f7daa79`; pruebas `d208ccd174d41c13c2acb892ae1471459caad583`.
+- GitHub Actions para el commit `d208ccd174d41c13c2acb892ae1471459caad583`: workflow `Tests` (run 42655188077) completado con éxito; workflow `Android APK` (run 42655187940) completado con éxito. Artefacto `mega-millions-debug-apk`, ID `13692095723`, disponible y no caducado.
+- [x] ~~Confirmar que las pruebas deterministas del filtro histórico pasan.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
+- [x] ~~Confirmar que el workflow Android APK compila y publica un artefacto.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
+- [ ] Instalar este APK y verificar en el teléfono que la Mega Ball no suma coincidencias en la generación real.
+
+La revisión y corrección del filtro histórico quedó implementada y las pruebas automatizadas y compilación Android pasaron. La verificación final en el dispositivo del usuario sigue pendiente.
