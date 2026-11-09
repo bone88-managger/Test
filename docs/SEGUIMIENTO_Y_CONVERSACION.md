@@ -614,3 +614,12 @@ Estado de verificación al registrar esta sección:
 - [ ] Instalar y revisar en el teléfono la nueva pantalla, comprobar que el último sorteo y las frecuencias coinciden con el archivo oficial importado, y confirmar que generar números sigue siendo uniforme.
 
 Actualización: 2026-11-09 18:02:33 UTC-04:00.
+
+## 27. Simplificación visual del análisis histórico por columnas (2026-11-09 18:22 UTC-04:00)
+
+- Se eliminó de cada tarjeta de columna la lista completa de frecuencias de diferencias.
+- Ahora se muestra únicamente un ejemplo de aumento (el intervalo positivo más frecuente) y un ejemplo de disminución (el intervalo negativo más frecuente), con su frecuencia histórica.
+- Se mantienen los conteos generales de resultados mayores, menores e iguales y la tendencia predominante.
+- Si una columna no tiene datos de aumento o disminución, se informa por separado que no hay datos para ese ejemplo.
+- Este ajuste es exclusivamente visual: no cambia el análisis histórico, sus datos, la generación uniforme ni las reglas de validación.
+- Cambio de código: `d7c4f604f552c25bddf2ea895c7e0c169936e023`.
