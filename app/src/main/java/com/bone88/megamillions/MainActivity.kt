@@ -68,7 +68,7 @@ internal data class Draw(val date: String, val white: List<Int>, val mega: Int) 
 internal fun hasWhiteColumnConflict(candidate: Draw, other: Draw): Boolean =
     candidate.white.zip(other.white).count { (candidateNumber, otherNumber) ->
         candidateNumber == otherNumber
-    } > 2
+    } > 1
 
 internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): Boolean =
     history.any { old -> hasWhiteColumnConflict(candidate, old) }
@@ -378,7 +378,7 @@ private fun SimulatorScreen(
                 }
             }
             item {
-                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 3 o más bolas blancas coinciden en las mismas columnas, comparando el historial y las combinaciones generadas anteriormente. La Mega Ball no cuenta como coincidencia.")
+                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 2 o más bolas blancas coinciden en las mismas columnas, comparando el historial y las combinaciones generadas anteriormente. La Mega Ball no cuenta como coincidencia.")
             }
             item {
                 OutlinedTextField(
@@ -504,7 +504,7 @@ private fun generateCandidate(
         val accepted = !duplicate && conflictingDraw == null
         val reason = when {
             duplicate -> "Combinación completa ya registrada anteriormente."
-            conflictingDraw != null -> "Tiene 3 o más bolas blancas iguales en las mismas columnas que una combinación registrada anteriormente."
+            conflictingDraw != null -> "Tiene 2 o más bolas blancas iguales en las mismas columnas que una combinación registrada anteriormente."
             else -> "Aceptada: cumple las reglas y no está duplicada."
         }
 
