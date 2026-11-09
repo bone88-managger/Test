@@ -201,7 +201,54 @@ Commits:
 - Pruebas: `372c25b76c87abf05c3a5377aa941c065327cd5e`
 
 Pendiente:
-- [ ] Confirmar que las pruebas Android pasan con la nueva validación.
-- [ ] Confirmar que el workflow Android APK compila y publica el APK.
-- [ ] Instalar esta versión en el teléfono y probar la importación de PDF/CSV.
+- [x] ~~Confirmar que las pruebas Android pasan con la nueva validación.~~ — Completada: 2026-11-09 12:22:46 UTC-04:00
+- [x] ~~Confirmar que el workflow Android APK compila y publica el APK.~~ — Completada: 2026-11-09 12:22:46 UTC-04:00
+- [x] ~~Instalar esta versión en el teléfono y probar la importación de PDF/CSV.~~ — Completada: 2026-11-09 12:22:46 UTC-04:00
 - [ ] Continuar la auditoría de filtro histórico, duplicados permanentes, límite de intentos y persistencia del registro.
+
+
+## 12. Auditoría de lógica interna — revisión inicial (2026-11-09)
+
+El usuario confirmó que instaló el APK y que la importación de PDF y CSV funciona correctamente. En GitHub Actions, para el commit `ac8ffa560110dd3d532a051516119267846dd7e7`:
+- Workflow `Tests`, ejecución 57: `pytest` completado con éxito.
+- Workflow `Android APK`, ejecución 44: tarea `build` completada con éxito.
+- El artefacto `mega-millions-debug-apk` está publicado y no ha caducado.
+
+Revisión estática de `MainActivity.kt`:
+
+**Filtro histórico ALL**
+- Cada candidato se genera primero sin consultar el historial.
+- Después se compara con todas las filas de `history`.
+- El código reúne los seis valores numéricos de cada sorteo en conjuntos y rechaza cuando la intersección supera dos valores.
+- Esto significa que una bola blanca del candidato puede coincidir numéricamente con la Mega Ball histórica y viceversa. Se conserva como comportamiento actual; no cambiar sin confirmar el criterio con el usuario.
+- La búsqueda se detiene al encontrar el primer sorteo conflictivo, lo cual es suficiente para rechazar el candidato.
+
+**Duplicados**
+- La clave ordena las cinco bolas blancas y mantiene la Mega Ball como campo separado.
+- Por tanto, el orden de las blancas no crea una combinación distinta, y cambiar la Mega Ball sí crea otra combinación.
+- Se consulta contra el historial importado y contra las combinaciones aceptadas guardadas en `generated`.
+- Tras aceptar una combinación, la interfaz la añade a `generated` y la guarda.
+
+**Límite de intentos**
+- El valor se valida entre 1 y 250.000.
+- El bucle realiza como máximo ese número de intentos y registra cada candidato.
+- Solo devuelve una combinación si supera los filtros; al agotarse el límite devuelve resultado vacío y no omite los filtros.
+
+**Persistencia — todavía requiere pruebas**
+- Las combinaciones aceptadas se serializan en SharedPreferences.
+- El registro completo se serializa en `generation_log.json` dentro del almacenamiento privado de la app.
+- Al volver a importar, el código conserva en memoria `generated` y `generationLog` y vuelve a guardarlos.
+- No hay todavía pruebas automatizadas de reinicio real, reimportación o recuperación tras datos corruptos. Además, los lectores de persistencia capturan cualquier excepción y devuelven listas vacías; si un archivo JSON se daña, la protección contra duplicados o el registro podría desaparecer silenciosamente. No se debe cambiar ese comportamiento sin diseñar y aprobar una recuperación segura.
+
+**Cobertura de pruebas observada**
+- Las pruebas actuales cubren rangos, muestreo acotado, bolas blancas distintas y frecuencias estadísticas.
+- No se encontraron pruebas unitarias específicas para filtro histórico, duplicados, límite de intentos ni persistencia.
+
+Pendiente de la auditoría:
+- [ ] Añadir pruebas deterministas para filtro ALL, incluidos los límites de 2 y 3 coincidencias y la comparación numérica entre tipos de bola, una vez confirmado el criterio.
+- [ ] Añadir pruebas para duplicados con blancas en distinto orden y Mega Ball distinta/igual.
+- [ ] Añadir pruebas para el límite de intentos, verificando que no se aceptan candidatos inválidos al agotarlo.
+- [ ] Probar en el teléfono que combinaciones aceptadas y registro sobreviven al cierre forzado/reapertura y a reimportar el historial.
+- [ ] Definir cómo detectar y manejar almacenamiento local dañado sin borrar silenciosamente el registro ni la protección contra duplicados.
+
+No se modificó código de la aplicación durante esta auditoría inicial.
