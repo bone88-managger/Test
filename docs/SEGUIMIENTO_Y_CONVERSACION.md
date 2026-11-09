@@ -261,6 +261,6 @@ Corrección implementada después de la auditoría inicial (2026-11-09):
 - GitHub Actions para el commit `d208ccd174d41c13c2acb892ae1471459caad583`: workflow `Tests` (run 42655188077) completado con éxito; workflow `Android APK` (run 42655187940) completado con éxito. Artefacto `mega-millions-debug-apk`, ID `13692095723`, disponible y no caducado.
 - [x] ~~Confirmar que las pruebas deterministas del filtro histórico pasan.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
 - [x] ~~Confirmar que el workflow Android APK compila y publica un artefacto.~~ — Completada: 2026-11-09 12:35:04 UTC-04:00
-- [ ] Instalar este APK y verificar en el teléfono que la Mega Ball no suma coincidencias en la generación real.
+- [x] ~~Instalar este APK y verificar en el teléfono que la Mega Ball no suma coincidencias en la generación real.~~ — Completada: 2026-11-09 12:45:46 UTC-04:00
 
-La revisión y corrección del filtro histórico quedó implementada y las pruebas automatizadas y compilación Android pasaron. La verificación final en el dispositivo del usuario sigue pendiente.
+La revisión y corrección del filtro histórico quedó implementada; las pruebas automatizadas, la compilación Android y la prueba real en el teléfono del usuario fueron completadas correctamente. El usuario confirmó que instaló el APK y que funciona correctamente. Verificación en dispositivo: 2026-11-09 12:45:46 UTC-04:00.
