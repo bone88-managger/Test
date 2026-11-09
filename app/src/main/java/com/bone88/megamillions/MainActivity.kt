@@ -142,10 +142,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PDFBoxResourceLoader.init(applicationContext)
+        val database = GenerationDatabase(applicationContext)
         lifecycleScope.launch {
             try {
                 val initialData = withContext(Dispatchers.IO) {
-                    val database = GenerationDatabase(applicationContext)
                     val legacyLogExists = fileList().contains("generation_log.json")
                     val legacyLogInput = if (legacyLogExists) openFileInput("generation_log.json") else null
                     database.migrateLegacy(
@@ -158,6 +158,7 @@ class MainActivity : ComponentActivity() {
                 setContent {
                     MaterialTheme {
                         SimulatorScreen(
+                            database = database,
                             initialHistory = initialData.first,
                             initialGenerated = initialData.second,
                             initialLog = initialData.third,
@@ -303,6 +304,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun SimulatorScreen(
+    database: GenerationDatabase,
     initialHistory: List<Draw>,
     initialGenerated: List<Draw>,
     initialLog: List<GenerationRecord>,
@@ -320,6 +322,7 @@ private fun SimulatorScreen(
     var message by remember { mutableStateOf(if (history.isEmpty()) "Importa el PDF histórico para comenzar." else "Historial listo.") }
     var error by remember { mutableStateOf(false) }
     var isImporting by remember { mutableStateOf(false) }
+    var isGenerating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -352,12 +355,21 @@ private fun SimulatorScreen(
             text = { Text("Se eliminarán las combinaciones aceptadas guardadas. Podrán volver a generarse y aceptarse.") },
             confirmButton = {
                 TextButton(onClick = {
-                    generationLog = generationLog.filterNot { it.accepted }
-                    generated = emptyList()
-                    latest = null
-                    onSave(history, generated, generationLog)
-                    message = "Se borró el historial de aceptados."
-                    confirmClearAccepted = false
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { database.clear(true) }
+                            generationLog = generationLog.filterNot { it.accepted }
+                            generated = emptyList()
+                            latest = null
+                            onSave(history, generated, generationLog)
+                            message = "Se borró el historial de aceptados."
+                        } catch (e: Exception) {
+                            message = e.message ?: "No se pudo borrar el historial de aceptados."
+                            error = true
+                        } finally {
+                            confirmClearAccepted = false
+                        }
+                    }
                 }) { Text("Borrar") }
             },
             dismissButton = {
@@ -372,10 +384,19 @@ private fun SimulatorScreen(
             text = { Text("Se eliminarán los rechazos guardados. La aplicación volverá a evaluar esas combinaciones si aparecen otra vez.") },
             confirmButton = {
                 TextButton(onClick = {
-                    generationLog = generationLog.filter { it.accepted }
-                    onSave(history, generated, generationLog)
-                    message = "Se borró el historial de rechazados."
-                    confirmClearRejected = false
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { database.clear(false) }
+                            generationLog = generationLog.filter { it.accepted }
+                            onSave(history, generated, generationLog)
+                            message = "Se borró el historial de rechazados."
+                        } catch (e: Exception) {
+                            message = e.message ?: "No se pudo borrar el historial de rechazados."
+                            error = true
+                        } finally {
+                            confirmClearRejected = false
+                        }
+                    }
                 }) { Text("Borrar") }
             },
             dismissButton = {
@@ -468,28 +489,36 @@ private fun SimulatorScreen(
             item {
                 Button(
                     onClick = {
-                        try {
-                            require(history.isNotEmpty()) { "Primero carga el PDF histórico." }
-                            val maxAttempts = attemptLimit.toIntOrNull()
-                                ?: throw IllegalArgumentException("Introduce un límite de intentos válido.")
-                            require(maxAttempts in 1..MAX_ALLOWED_ATTEMPTS) {
-                                "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
-                            }
-                            val result = generateCandidate(history, generated, generationLog, maxAttempts)
-                            generationLog = generationLog + result.records
-                            if (result.candidate != null) {
-                                generated = generated + result.candidate
-                                latest = result.candidate
-                                message = "Combinación aceptada en " + result.records.size + " intento(s)."
-                                error = false
-                            } else {
-                                message = "No se encontró una combinación válida tras " + maxAttempts + " intentos. Se registraron todos los rechazos."
-                                error = true
-                            }
-                            onSave(history, generated, generationLog)
-                        } catch (e: Exception) {
-                            message = e.message ?: "No se pudo generar."
+                        val maxAttempts = attemptLimit.toIntOrNull()
+                        if (maxAttempts == null || maxAttempts !in 1..MAX_ALLOWED_ATTEMPTS) {
+                            message = "El límite debe estar entre 1 y " + MAX_ALLOWED_ATTEMPTS + "."
                             error = true
+                        } else {
+                            scope.launch {
+                                isGenerating = true
+                                try {
+                                    require(history.isNotEmpty()) { "Primero carga el PDF histórico." }
+                                    val result = withContext(Dispatchers.IO) {
+                                        generateCandidate(history, database, maxAttempts)
+                                    }
+                                    generationLog = generationLog + result.records
+                                    if (result.candidate != null) {
+                                        generated = generated + result.candidate
+                                        latest = result.candidate
+                                        message = "Combinación aceptada en " + result.records.size + " intento(s)."
+                                        error = false
+                                    } else {
+                                        message = "No se encontró una combinación válida tras " + maxAttempts + " intentos. Se registraron todos los rechazos."
+                                        error = true
+                                    }
+                                    onSave(history, generated, generationLog)
+                                } catch (e: Exception) {
+                                    message = e.message ?: "No se pudo generar."
+                                    error = true
+                                } finally {
+                                    isGenerating = false
+                                }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -564,48 +593,66 @@ private fun NumberBall(value: String, mega: Boolean = false) {
 
 private fun generateCandidate(
     history: List<Draw>,
-    generated: List<Draw>,
-    previousLog: List<GenerationRecord>,
+    database: GenerationDatabase,
     maxAttempts: Int
 ): GenerationResult {
-    val knownKeys = (history + generated).map { it.key }.toHashSet()
-    val rejectedWhiteKeys = previousLog.asSequence()
-        .filter { !it.accepted }
-        .map { it.white.sorted().joinToString(",") }
-        .toHashSet()
     val records = mutableListOf<GenerationRecord>()
+    val bufferedRejectedKeys = HashSet<String>()
+    val batchSize = 250
+
+    fun flush(acceptedDraw: Draw? = null) {
+        database.insertGenerationBatch(records, acceptedDraw)
+        records.clear()
+        bufferedRejectedKeys.clear()
+    }
 
     for (attempt in 1..maxAttempts) {
         val white = SecureLotteryRandom.sampleWhite()
-        val whiteKey = white.sorted().joinToString(",")
-        if (whiteKey in rejectedWhiteKeys) continue
-        val mega = SecureLotteryRandom.sampleMega()
-        val candidate = Draw("SIMULADO", white, mega)
+        val whiteKey = white.joinToString(",")
+        if (whiteKey in bufferedRejectedKeys || database.hasRejectedWhiteKey(whiteKey)) continue
 
-        val duplicate = candidate.key in knownKeys
-        val conflictingDraw = if (duplicate) null else (history + generated).firstOrNull { old ->
-            hasWhiteColumnConflict(candidate, old)
-        }
+        val candidate = Draw("SIMULADO", white, SecureLotteryRandom.sampleMega())
+        val duplicate = history.any { it.white == white } ||
+            database.hasGeneratedWhiteKey(whiteKey) ||
+            database.hasAcceptedWhiteKey(whiteKey)
+        val conflictingDraw = if (duplicate) false else
+            hasHistoricalWhiteConflict(candidate, history) ||
+                database.hasGeneratedColumnConflict(white) ||
+                database.hasAcceptedColumnConflict(white)
 
-        val accepted = !duplicate && conflictingDraw == null
+        val accepted = !duplicate && !conflictingDraw
         val reason = when {
-            duplicate -> "Combinación completa ya registrada anteriormente."
-            conflictingDraw != null -> "Tiene 2 o más bolas blancas iguales en las mismas columnas que una combinación registrada anteriormente."
+            duplicate -> "Combinación de bolas blancas ya registrada anteriormente."
+            conflictingDraw -> "Tiene 2 o más bolas blancas iguales en las mismas columnas que una combinación registrada anteriormente."
             else -> "Aceptada: cumple las reglas y no está duplicada."
         }
-
         records += GenerationRecord(
             timestamp = System.currentTimeMillis(),
             attempt = attempt,
             white = white,
-            mega = mega,
+            mega = candidate.mega,
             accepted = accepted,
             reason = reason
         )
-        if (!accepted) rejectedWhiteKeys += whiteKey
 
-        if (accepted) return GenerationResult(candidate, records)
+        if (accepted) {
+            flush(candidate)
+            return GenerationResult(candidate, listOf(
+                GenerationRecord(
+                    timestamp = records.firstOrNull()?.timestamp ?: System.currentTimeMillis(),
+                    attempt = attempt,
+                    white = white,
+                    mega = candidate.mega,
+                    accepted = true,
+                    reason = reason
+                )
+            ))
+        }
+
+        bufferedRejectedKeys += whiteKey
+        if (records.size >= batchSize) flush()
     }
 
-    return GenerationResult(null, records)
+    flush()
+    return GenerationResult(null, emptyList())
 }
