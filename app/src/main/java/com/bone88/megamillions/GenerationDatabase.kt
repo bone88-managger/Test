@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.JsonReader
+import android.util.JsonToken
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.StringReader
@@ -78,6 +79,7 @@ internal class GenerationDatabase(context: Context) :
                     reader.beginArray()
                     while (reader.hasNext()) if (insertLegacyDraw(reader, db)) expectedGenerated++
                     reader.endArray()
+                    check(reader.peek() == JsonToken.END_DOCUMENT) { "El archivo de combinaciones generadas contiene datos adicionales." }
                 }
             }
             legacyLogInput?.let { input ->
@@ -87,6 +89,7 @@ internal class GenerationDatabase(context: Context) :
                         if (insertLegacyRecord(reader, db)) expectedAccepted++ else expectedRejected++
                     }
                     reader.endArray()
+                    check(reader.peek() == JsonToken.END_DOCUMENT) { "El historial de generaciones contiene datos adicionales." }
                 }
             }
 
