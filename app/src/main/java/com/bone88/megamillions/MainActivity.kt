@@ -79,6 +79,72 @@ internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): B
 internal fun hasWhiteBallDuplicate(candidate: Draw, history: List<Draw>): Boolean =
     history.any { old -> old.white == candidate.white }
 
+
+internal data class ColumnTrend(
+    val column: Int,
+    val greater: Int,
+    val lower: Int,
+    val equal: Int,
+    val intervals: Map<Int, Int>
+) {
+    val total: Int get() = greater + lower + equal
+    val leadingDirection: String get() = when {
+        greater > lower -> "Mayor"
+        lower > greater -> "Menor"
+        else -> "Empate"
+    }
+    val mostFrequentInterval: Int? get() =
+        intervals.entries.maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { -it.key })?.key
+}
+
+internal data class HistoricalColumnAnalysis(
+    val latestDraw: Draw?,
+    val transitions: Int,
+    val columns: List<ColumnTrend>
+)
+
+private fun drawDateOrderValue(value: String): Long? {
+    val formats = listOf("yyyy-MM-dd", "M/d/yyyy", "MM/dd/yyyy", "M/d/yy", "MM/dd/yy")
+    for (pattern in formats) {
+        try {
+            val parser = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
+            val parsed = parser.parse(value.trim())
+            if (parsed != null) return parsed.time
+        } catch (_: Exception) { }
+    }
+    return null
+}
+
+internal fun analyzeOfficialDrawHistory(history: List<Draw>): HistoricalColumnAnalysis {
+    val ordered = history.withIndex().sortedWith(
+        compareBy<IndexedValue<Draw>> { drawDateOrderValue(it.value.date) ?: Long.MIN_VALUE }
+            .thenBy { it.value.date }
+            .thenBy { it.index }
+    ).map { it.value }
+    val counts = (0 until WHITE_COUNT).map { mutableMapOf<Int, Int>() }
+    val greater = IntArray(WHITE_COUNT)
+    val lower = IntArray(WHITE_COUNT)
+    val equal = IntArray(WHITE_COUNT)
+    for (index in 0 until (ordered.size - 1).coerceAtLeast(0)) {
+        val current = ordered[index].white
+        val next = ordered[index + 1].white
+        for (column in 0 until WHITE_COUNT) {
+            val difference = next[column] - current[column]
+            when {
+                difference > 0 -> greater[column]++
+                difference < 0 -> lower[column]++
+                else -> equal[column]++
+            }
+            val interval = kotlin.math.abs(difference)
+            counts[column][interval] = (counts[column][interval] ?: 0) + 1
+        }
+    }
+    val columns = (0 until WHITE_COUNT).map { column ->
+        ColumnTrend(column + 1, greater[column], lower[column], equal[column], counts[column].toSortedMap())
+    }
+    return HistoricalColumnAnalysis(ordered.lastOrNull(), (ordered.size - 1).coerceAtLeast(0), columns)
+}
+
 internal data class GenerationRecord(
     val timestamp: Long,
     val attempt: Int,
@@ -343,6 +409,7 @@ private fun SimulatorScreen(
     var acceptedCount by remember { mutableIntStateOf(initialData.acceptedCount) }
     var rejectedCount by remember { mutableIntStateOf(initialData.rejectedCount) }
     var showRejectedHistory by remember { mutableStateOf(false) }
+    var showHistoricalAnalysis by remember { mutableStateOf(false) }
     var confirmClearAccepted by remember { mutableStateOf(false) }
     var confirmClearRejected by remember { mutableStateOf(false) }
     var latest by remember { mutableStateOf<Draw?>(null) }
@@ -434,7 +501,72 @@ private fun SimulatorScreen(
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        if (showRejectedHistory) {
+        if (showHistoricalAnalysis) {
+            val analysis = remember(history) { analyzeOfficialDrawHistory(history) }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showHistoricalAnalysis = false }) { Text("VOLVER") }
+                        Text("Análisis histórico", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
+                if (analysis.latestDraw == null) {
+                    item { Text("Importa un historial oficial PDF o CSV para realizar el análisis.") }
+                } else {
+                    item {
+                        Card {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Último sorteo oficial", fontWeight = FontWeight.Bold)
+                                Text(analysis.latestDraw.date)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    analysis.latestDraw.white.forEach { NumberBall(it.toString()) }
+                                }
+                                Text("Mega Ball: " + analysis.latestDraw.mega)
+                                Text("Sorteos comparados: " + analysis.transitions, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    item {
+                        Text("Cada columna compara su número de un sorteo con el número de la misma columna en el sorteo siguiente, en orden cronológico.")
+                    }
+                    items(analysis.columns) { column ->
+                        Card {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                Text("Columna " + column.column, fontWeight = FontWeight.Bold)
+                                Text("Siguiente número mayor: " + column.greater + " · menor: " + column.lower + " · igual: " + column.equal)
+                                Text("Tendencia histórica: " + column.leadingDirection)
+                                val topInterval = column.mostFrequentInterval
+                                Text(
+                                    if (topInterval == null) "Sin transiciones suficientes."
+                                    else "Intervalo más frecuente: diferencia de " + topInterval +
+                                        " (" + column.intervals[topInterval] + " veces)"
+                                )
+                                Text("Frecuencia de cada diferencia:", fontWeight = FontWeight.SemiBold)
+                                if (column.intervals.isEmpty()) {
+                                    Text("No hay datos.")
+                                } else {
+                                    column.intervals.forEach { (difference, count) ->
+                                        Text("±" + difference + ": " + count + " veces")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Card {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Importante", fontWeight = FontWeight.Bold)
+                                Text("Este informe describe frecuencias pasadas; no predice el próximo sorteo ni cambia las probabilidades. La generación de bolas blancas y Mega Ball sigue siendo uniforme e independiente de este análisis.")
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (showRejectedHistory) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
@@ -514,6 +646,13 @@ private fun SimulatorScreen(
             }
             item {
                 Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 2 o más bolas blancas coinciden en las mismas columnas, comparando el historial y las combinaciones generadas anteriormente. La Mega Ball no cuenta como coincidencia.")
+            }
+            item {
+                OutlinedButton(
+                    onClick = { showHistoricalAnalysis = true },
+                    enabled = history.isNotEmpty() && !isImporting && !isGenerating,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("VER ANÁLISIS HISTÓRICO POR COLUMNAS") }
             }
             item {
                 OutlinedTextField(
