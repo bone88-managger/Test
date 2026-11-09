@@ -63,9 +63,15 @@ internal data class Draw(val date: String, val white: List<Int>, val mega: Int) 
     val key: String get() = white.sorted().joinToString(",") + "|" + mega
 }
 
-// Historical matching is deliberately white-ball-only. Mega Ball never contributes.
+// White-ball matching is positional: only equal values in the same ascending column count.
+// Mega Ball never contributes.
+internal fun hasWhiteColumnConflict(candidate: Draw, other: Draw): Boolean =
+    candidate.white.zip(other.white).count { (candidateNumber, otherNumber) ->
+        candidateNumber == otherNumber
+    } > 2
+
 internal fun hasHistoricalWhiteConflict(candidate: Draw, history: List<Draw>): Boolean =
-    history.any { old -> candidate.white.toSet().intersect(old.white.toSet()).size > 2 }
+    history.any { old -> hasWhiteColumnConflict(candidate, old) }
 
 private data class GenerationRecord(
     val timestamp: Long,
@@ -372,7 +378,7 @@ private fun SimulatorScreen(
                 }
             }
             item {
-                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 3 o más bolas blancas coinciden con las 5 bolas blancas de cualquier sorteo histórico. La Mega Ball no cuenta como coincidencia.")
+                Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 3 o más bolas blancas coinciden en las mismas columnas, comparando el historial y las combinaciones generadas anteriormente. La Mega Ball no cuenta como coincidencia.")
             }
             item {
                 OutlinedTextField(
@@ -491,14 +497,14 @@ private fun generateCandidate(
         val candidate = Draw("SIMULADO", white, mega)
 
         val duplicate = candidate.key in knownKeys
-        val conflictingDraw = if (duplicate) null else history.firstOrNull { old ->
-            candidate.white.toSet().intersect(old.white.toSet()).size > 2
+        val conflictingDraw = if (duplicate) null else (history + generated).firstOrNull { old ->
+            hasWhiteColumnConflict(candidate, old)
         }
 
         val accepted = !duplicate && conflictingDraw == null
         val reason = when {
             duplicate -> "Combinación completa ya registrada anteriormente."
-            conflictingDraw != null -> "Supera 2 coincidencias de bolas blancas con el sorteo " + conflictingDraw.date + "."
+            conflictingDraw != null -> "Tiene 3 o más bolas blancas iguales en las mismas columnas que una combinación registrada anteriormente."
             else -> "Aceptada: cumple las reglas y no está duplicada."
         }
 
