@@ -95,6 +95,12 @@ internal data class ColumnTrend(
     }
     val mostFrequentInterval: Int? get() =
         intervals.entries.maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { -it.key })?.key
+    val mostFrequentGreaterInterval: Map.Entry<Int, Int>? get() =
+        intervals.entries.filter { it.key > 0 }
+            .maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
+    val mostFrequentLowerInterval: Map.Entry<Int, Int>? get() =
+        intervals.entries.filter { it.key < 0 }
+            .maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { -it.key })
 }
 
 internal data class HistoricalColumnAnalysis(
@@ -545,17 +551,16 @@ private fun SimulatorScreen(
                                         (if (topInterval > 0) "subió " + topInterval else if (topInterval < 0) "bajó " + kotlin.math.abs(topInterval) else "se mantuvo igual") +
                                         " (" + column.intervals[topInterval] + " veces)"
                                 )
-                                Text("Frecuencia de cada diferencia:", fontWeight = FontWeight.SemiBold)
-                                if (column.intervals.isEmpty()) {
-                                    Text("No hay datos.")
-                                } else {
-                                    column.intervals.forEach { (difference, count) ->
-                                        Text(
-                                            (if (difference > 0) "Subió +" + difference else if (difference < 0) "Bajó " + kotlin.math.abs(difference) else "Igual") +
-                                                ": " + count + " veces"
-                                        )
-                                    }
-                                }
+                                val greaterExample = column.mostFrequentGreaterInterval
+                                val lowerExample = column.mostFrequentLowerInterval
+                                Text(
+                                    if (greaterExample == null) "Ejemplo de mayor: sin datos."
+                                    else "Ejemplo de mayor: +" + greaterExample.key + " (" + greaterExample.value + " veces)"
+                                )
+                                Text(
+                                    if (lowerExample == null) "Ejemplo de menor: sin datos."
+                                    else "Ejemplo de menor: " + lowerExample.key + " (" + lowerExample.value + " veces)"
+                                )
                             }
                         }
                     }
