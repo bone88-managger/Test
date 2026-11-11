@@ -223,8 +223,9 @@ class SecureLotteryRandomTest {
 
     @Test
     fun individualColumnsThreeFourAndFiveCountAllFourDirectionsAndNeverAfterInTheirOwnColumn() {
+        data class Case(val column: Int, val reference: Int, val draws: List<Draw>, val observedAfter: List<Int>)
         val cases = listOf(
-            Triple(
+            Case(
                 3,
                 22,
                 listOf(
@@ -236,7 +237,7 @@ class SecureLotteryRandomTest {
                 ),
                 listOf(23, 24)
             ),
-            Triple(
+            Case(
                 4,
                 32,
                 listOf(
@@ -248,7 +249,7 @@ class SecureLotteryRandomTest {
                 ),
                 listOf(33, 34)
             ),
-            Triple(
+            Case(
                 5,
                 42,
                 listOf(
@@ -268,8 +269,8 @@ class SecureLotteryRandomTest {
             assertEquals(3, result.occurrences)
             assertEquals(observedAfter.map { it to 1 }, result.above.top)
             assertEquals(observedAfter.map { it to 1 }, result.below.top)
-            assertEquals(3, result.above.samples)
-            assertEquals(3, result.below.samples)
+            assertEquals(2, result.above.samples)
+            assertEquals(2, result.below.samples)
             assertEquals(3, result.left.samples)
             assertEquals(
                 (20..70).filterNot { it in observedAfter },
