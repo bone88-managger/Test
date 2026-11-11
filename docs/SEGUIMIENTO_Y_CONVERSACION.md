@@ -650,3 +650,32 @@ Estado:
 - [ ] Instalar/probar la pantalla en el teléfono y confirmar la presentación.
 
 Actualización: 2026-11-11 07:00 UTC-04:00.
+
+
+## 29. Análisis de vecinos de la primera columna en todo el historial (2026-11-11)
+
+El usuario confirmó la orientación de los vecinos y el alcance del cálculo: se deben considerar todas las apariciones de la referencia en todos los sorteos oficiales importados.
+
+Reglas aprobadas:
+- La referencia es el número que aparece en la primera columna del último sorteo oficial.
+- **Arriba:** primera columna del sorteo inmediatamente más reciente que la aparición de referencia.
+- **Derecha:** segunda columna del mismo sorteo donde aparece la referencia.
+- **Abajo:** primera columna del sorteo inmediatamente anterior (más antiguo) a la aparición de referencia.
+- Para cada aparición de la referencia en la primera columna, se cuenta el vecino correspondiente. Se agregan las frecuencias de todas las apariciones.
+- Mostrar hasta cuatro números más frecuentes por dirección. Ordenar por frecuencia descendente; en caso de empate, por valor numérico ascendente.
+- En los extremos del historial, contar solo los vecinos que realmente existen; no inventar datos.
+
+Alcance de implementación:
+- Activar únicamente el botón **ENCONTRAR** de la primera columna.
+- Los botones de las columnas 2 a 5 permanecen sin función hasta que el usuario indique el siguiente paso.
+- Mostrar los resultados en la pantalla **ANÁLISIS INDIVIDUAL**.
+- No cambiar el análisis histórico existente, la generación uniforme, los filtros, SQLite ni los historiales aceptados/rechazados.
+
+Estado:
+- [ ] Implementar el cálculo de frecuencias de arriba/derecha/abajo para la primera columna.
+- [ ] Mostrar los cuatro valores principales de cada dirección en la pantalla individual.
+- [ ] Añadir pruebas para orden cronológico, todas las apariciones, límites del historial y desempates.
+- [ ] Confirmar las pruebas automatizadas y la compilación Android APK.
+- [ ] Revisar el resultado en el teléfono.
+
+Actualización: 2026-11-11 08:31:04 UTC-04:00.
