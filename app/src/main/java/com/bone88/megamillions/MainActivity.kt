@@ -415,6 +415,7 @@ private fun SimulatorScreen(
     var rejectedCount by remember { mutableIntStateOf(initialData.rejectedCount) }
     var showRejectedHistory by remember { mutableStateOf(false) }
     var showHistoricalAnalysis by remember { mutableStateOf(false) }
+    var showIndividualAnalysis by remember { mutableStateOf(false) }
     var confirmClearAccepted by remember { mutableStateOf(false) }
     var confirmClearRejected by remember { mutableStateOf(false) }
     var latest by remember { mutableStateOf<Draw?>(null) }
@@ -506,7 +507,53 @@ private fun SimulatorScreen(
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        if (showHistoricalAnalysis) {
+        if (showIndividualAnalysis) {
+            val latestOfficialDraw = remember(history) { analyzeOfficialDrawHistory(history).latestDraw }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(onClick = { showIndividualAnalysis = false }) { Text("VOLVER") }
+                        Text("ANÁLISIS INDIVIDUAL", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
+                if (latestOfficialDraw == null) {
+                    item { Text("Importa un historial oficial PDF o CSV para mostrar el último sorteo.") }
+                } else {
+                    item {
+                        Card {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Último sorteo oficial", fontWeight = FontWeight.Bold)
+                                Text(latestOfficialDraw.date)
+                                Text("Selecciona una columna para continuar con el análisis individual.")
+                            }
+                        }
+                    }
+                    items(latestOfficialDraw.white.size) { index ->
+                        Card {
+                            Column(
+                                Modifier.fillMaxWidth().padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("COLUMNA " + (index + 1), fontWeight = FontWeight.Bold)
+                                NumberBall(latestOfficialDraw.white[index].toString())
+                                OutlinedButton(
+                                    onClick = { },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) { Text("ENCONTRAR") }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (showHistoricalAnalysis) {
             val analysis = remember(history) { analyzeOfficialDrawHistory(history) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -654,6 +701,13 @@ private fun SimulatorScreen(
             }
             item {
                 Text("Reglas: 5 blancas de 1–70 y Mega Ball independiente de 1–24. Se rechaza si 2 o más bolas blancas coinciden en las mismas columnas, comparando el historial y las combinaciones generadas anteriormente. La Mega Ball no cuenta como coincidencia.")
+            }
+            item {
+                OutlinedButton(
+                    onClick = { showIndividualAnalysis = true },
+                    enabled = history.isNotEmpty() && !isImporting && !isGenerating,
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("ANÁLISIS INDIVIDUAL") }
             }
             item {
                 OutlinedButton(
