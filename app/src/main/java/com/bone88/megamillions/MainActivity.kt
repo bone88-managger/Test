@@ -57,6 +57,8 @@ private const val WHITE_COUNT = 5
 private const val FIRST_COLUMN_ANALYSIS_MAX = 25
 private const val SECOND_COLUMN_ANALYSIS_MIN = 15
 private const val SECOND_COLUMN_ANALYSIS_MAX = 40
+private const val LATER_COLUMN_ANALYSIS_MIN = 20
+private const val LATER_COLUMN_ANALYSIS_MAX = 70
 private const val MEGA_MIN = 1
 private const val MEGA_MAX = 24
 private const val MAX_ALLOWED_ATTEMPTS = 250_000
@@ -196,6 +198,17 @@ internal data class SecondColumnAnalysis(
     val neverAfter: List<Int>
 )
 
+internal data class LaterColumnAnalysis(
+    val column: Int,
+    val reference: Int,
+    val occurrences: Int,
+    val above: NeighborFrequency,
+    val left: NeighborFrequency,
+    val right: NeighborFrequency,
+    val below: NeighborFrequency,
+    val neverAfter: List<Int>
+)
+
 // Column 2 uses the same chronological neighbor rules as column 1,
 // with the adjacent columns on both sides included.
 internal fun analyzeSecondColumnNeighbors(
@@ -249,6 +262,69 @@ internal fun analyzeSecondColumnNeighbors(
         right = summarize(rightCounts),
         below = summarize(belowCounts),
         neverAfter = (SECOND_COLUMN_ANALYSIS_MIN..SECOND_COLUMN_ANALYSIS_MAX)
+            .filter { it !in aboveCounts }
+    )
+}
+
+
+internal fun analyzeLaterColumnNeighbors(
+    history: List<Draw>,
+    column: Int,
+    reference: Int
+): LaterColumnAnalysis {
+    require(column in 3..5) { "La columna debe estar entre 3 y 5." }
+    val columnIndex = column - 1
+    val ordered = history.withIndex().sortedWith(
+        compareBy<IndexedValue<Draw>> { drawDateOrderValue(it.value.date) ?: Long.MIN_VALUE }
+            .thenBy { it.value.date }
+            .thenBy { it.index }
+    ).map { it.value }
+
+    val aboveCounts = mutableMapOf<Int, Int>()
+    val leftCounts = mutableMapOf<Int, Int>()
+    val rightCounts = mutableMapOf<Int, Int>()
+    val belowCounts = mutableMapOf<Int, Int>()
+    var occurrences = 0
+
+    for (index in ordered.indices) {
+        val current = ordered[index]
+        if (current.white[columnIndex] != reference) continue
+
+        occurrences++
+        leftCounts[current.white[columnIndex - 1]] =
+            (leftCounts[current.white[columnIndex - 1]] ?: 0) + 1
+        if (columnIndex < WHITE_COUNT - 1) {
+            val rightNumber = current.white[columnIndex + 1]
+            rightCounts[rightNumber] = (rightCounts[rightNumber] ?: 0) + 1
+        }
+        if (index + 1 < ordered.size) {
+            val aboveNumber = ordered[index + 1].white[columnIndex]
+            aboveCounts[aboveNumber] = (aboveCounts[aboveNumber] ?: 0) + 1
+        }
+        if (index > 0) {
+            val belowNumber = ordered[index - 1].white[columnIndex]
+            belowCounts[belowNumber] = (belowCounts[belowNumber] ?: 0) + 1
+        }
+    }
+
+    fun summarize(counts: Map<Int, Int>): NeighborFrequency =
+        NeighborFrequency(
+            samples = counts.values.sum(),
+            top = counts.entries
+                .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
+                .take(8)
+                .map { it.key to it.value }
+        )
+
+    return LaterColumnAnalysis(
+        column = column,
+        reference = reference,
+        occurrences = occurrences,
+        above = summarize(aboveCounts),
+        left = summarize(leftCounts),
+        right = summarize(rightCounts),
+        below = summarize(belowCounts),
+        neverAfter = (LATER_COLUMN_ANALYSIS_MIN..LATER_COLUMN_ANALYSIS_MAX)
             .filter { it !in aboveCounts }
     )
 }
@@ -572,6 +648,7 @@ private fun SimulatorScreen(
     var showIndividualAnalysis by remember { mutableStateOf(false) }
     var showFirstColumnResults by remember { mutableStateOf(false) }
     var showSecondColumnResults by remember { mutableStateOf(false) }
+    val showLaterColumnResults = remember { mutableStateListOf(false, false, false) }
     var confirmClearAccepted by remember { mutableStateOf(false) }
     var confirmClearRejected by remember { mutableStateOf(false) }
     var latest by remember { mutableStateOf<Draw?>(null) }
@@ -671,6 +748,13 @@ private fun SimulatorScreen(
             val secondColumnAnalysis = remember(history, latestOfficialDraw) {
                 latestOfficialDraw?.let { analyzeSecondColumnNeighbors(history, it.white[1]) }
             }
+            val laterColumnAnalyses = remember(history, latestOfficialDraw) {
+                latestOfficialDraw?.let { draw ->
+                    (3..5).map { column ->
+                        analyzeLaterColumnNeighbors(history, column, draw.white[column - 1])
+                    }
+                }
+            }
             val historicalColumnRanges = remember(history) { analyzeHistoricalColumnRanges(history) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -686,6 +770,7 @@ private fun SimulatorScreen(
                             showIndividualAnalysis = false
                             showFirstColumnResults = false
                             showSecondColumnResults = false
+                            showLaterColumnResults.indices.forEach { showLaterColumnResults[it] = false }
                         }) { Text("VOLVER") }
                         Text("ANÁLISIS INDIVIDUAL", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     }
@@ -725,6 +810,7 @@ private fun SimulatorScreen(
                                     onClick = {
                                         if (index == 0) showFirstColumnResults = true
                                         if (index == 1) showSecondColumnResults = true
+                                        if (index in 2..4) showLaterColumnResults[index - 2] = true
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text("ENCONTRAR") }
@@ -784,6 +870,72 @@ private fun SimulatorScreen(
                                         }
                                     }
                                 }
+
+                                if (index in 2..4 && showLaterColumnResults[index - 2] &&
+                                    laterColumnAnalyses != null
+                                ) {
+                                    val analysis = laterColumnAnalyses[index - 2]
+                                    val currentColumn = index + 1
+                                    Card {
+                                        Column(
+                                            Modifier.fillMaxWidth().padding(14.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Text("ANÁLISIS DE LA COLUMNA " + currentColumn, fontWeight = FontWeight.Bold)
+                                            Text("Número de referencia: " + analysis.reference)
+                                            Text("Apariciones de la referencia en todo el historial: " + analysis.occurrences)
+
+                                            Text("ARRIBA · columna " + currentColumn + " del sorteo inmediatamente siguiente")
+                                            Text(
+                                                if (analysis.above.top.isEmpty()) "Sin datos disponibles."
+                                                else analysis.above.top.joinToString(" · ") {
+                                                    it.first.toString() + " (" + it.second + ")"
+                                                }
+                                            )
+
+                                            Text("NUNCA SALIERON DESPUÉS · columna " + currentColumn + " del sorteo siguiente (20–70)")
+                                            Text(
+                                                if (analysis.neverAfter.isEmpty()) "Todos los números del 20 al 70 aparecieron al menos una vez."
+                                                else analysis.neverAfter.joinToString(" · ")
+                                            )
+
+                                            Text("IZQUIERDA · columna " + (currentColumn - 1) + " del mismo sorteo")
+                                            Text(
+                                                if (analysis.left.top.isEmpty()) "Sin datos disponibles."
+                                                else analysis.left.top.joinToString(" · ") {
+                                                    it.first.toString() + " (" + it.second + ")"
+                                                }
+                                            )
+
+                                            if (currentColumn < 5) {
+                                                Text("DERECHA · columna " + (currentColumn + 1) + " del mismo sorteo")
+                                                Text(
+                                                    if (analysis.right.top.isEmpty()) "Sin datos disponibles."
+                                                    else analysis.right.top.joinToString(" · ") {
+                                                        it.first.toString() + " (" + it.second + ")"
+                                                    }
+                                                )
+                                            } else {
+                                                Text("DERECHA · No existe una columna a la derecha.")
+                                            }
+
+                                            Text("ABAJO · columna " + currentColumn + " del sorteo inmediatamente anterior")
+                                            Text(
+                                                if (analysis.below.top.isEmpty()) "Sin datos disponibles."
+                                                else analysis.below.top.joinToString(" · ") {
+                                                    it.first.toString() + " (" + it.second + ")"
+                                                }
+                                            )
+
+                                            Text(
+                                                "Se muestran hasta ocho números por dirección, ordenados por frecuencia " +
+                                                    "de mayor a menor. Entre frecuencias iguales, se muestra primero el número menor.",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    }
+                                }
+
                                 if (index == 0 && showFirstColumnResults && firstColumnAnalysis != null) {
                                     Card {
                                         Column(
