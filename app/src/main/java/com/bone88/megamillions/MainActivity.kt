@@ -150,6 +150,72 @@ internal fun analyzeOfficialDrawHistory(history: List<Draw>): HistoricalColumnAn
     return HistoricalColumnAnalysis(ordered.lastOrNull(), (ordered.size - 1).coerceAtLeast(0), columns)
 }
 
+
+internal data class NeighborFrequency(
+    val samples: Int,
+    val top: List<Pair<Int, Int>>
+)
+
+internal data class IndividualColumnAnalysis(
+    val reference: Int,
+    val occurrences: Int,
+    val above: NeighborFrequency,
+    val right: NeighborFrequency,
+    val below: NeighborFrequency
+)
+
+// The history is sorted oldest-to-newest, matching analyzeOfficialDrawHistory.
+// "Above" is the next, newer draw; "below" is the previous, older draw.
+internal fun analyzeFirstColumnNeighbors(
+    history: List<Draw>,
+    reference: Int
+): IndividualColumnAnalysis {
+    val ordered = history.withIndex().sortedWith(
+        compareBy<IndexedValue<Draw>> { drawDateOrderValue(it.value.date) ?: Long.MIN_VALUE }
+            .thenBy { it.value.date }
+            .thenBy { it.index }
+    ).map { it.value }
+
+    val aboveCounts = mutableMapOf<Int, Int>()
+    val rightCounts = mutableMapOf<Int, Int>()
+    val belowCounts = mutableMapOf<Int, Int>()
+    var occurrences = 0
+
+    for (index in ordered.indices) {
+        val current = ordered[index]
+        if (current.white[0] != reference) continue
+
+        occurrences++
+        rightCounts[current.white[1]] = (rightCounts[current.white[1]] ?: 0) + 1
+
+        if (index + 1 < ordered.size) {
+            val aboveNumber = ordered[index + 1].white[0]
+            aboveCounts[aboveNumber] = (aboveCounts[aboveNumber] ?: 0) + 1
+        }
+        if (index > 0) {
+            val belowNumber = ordered[index - 1].white[0]
+            belowCounts[belowNumber] = (belowCounts[belowNumber] ?: 0) + 1
+        }
+    }
+
+    fun summarize(counts: Map<Int, Int>): NeighborFrequency =
+        NeighborFrequency(
+            samples = counts.values.sum(),
+            top = counts.entries
+                .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
+                .take(4)
+                .map { it.key to it.value }
+        )
+
+    return IndividualColumnAnalysis(
+        reference = reference,
+        occurrences = occurrences,
+        above = summarize(aboveCounts),
+        right = summarize(rightCounts),
+        below = summarize(belowCounts)
+    )
+}
+
 internal data class GenerationRecord(
     val timestamp: Long,
     val attempt: Int,
@@ -416,6 +482,7 @@ private fun SimulatorScreen(
     var showRejectedHistory by remember { mutableStateOf(false) }
     var showHistoricalAnalysis by remember { mutableStateOf(false) }
     var showIndividualAnalysis by remember { mutableStateOf(false) }
+    var showFirstColumnResults by remember { mutableStateOf(false) }
     var confirmClearAccepted by remember { mutableStateOf(false) }
     var confirmClearRejected by remember { mutableStateOf(false) }
     var latest by remember { mutableStateOf<Draw?>(null) }
@@ -509,6 +576,9 @@ private fun SimulatorScreen(
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         if (showIndividualAnalysis) {
             val latestOfficialDraw = remember(history) { analyzeOfficialDrawHistory(history).latestDraw }
+            val firstColumnAnalysis = remember(history, latestOfficialDraw) {
+                latestOfficialDraw?.let { analyzeFirstColumnNeighbors(history, it.white[0]) }
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
@@ -519,7 +589,10 @@ private fun SimulatorScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(onClick = { showIndividualAnalysis = false }) { Text("VOLVER") }
+                        OutlinedButton(onClick = {
+                            showIndividualAnalysis = false
+                            showFirstColumnResults = false
+                        }) { Text("VOLVER") }
                         Text("ANÁLISIS INDIVIDUAL", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -545,9 +618,53 @@ private fun SimulatorScreen(
                                 Text("COLUMNA " + (index + 1), fontWeight = FontWeight.Bold)
                                 NumberBall(latestOfficialDraw.white[index].toString())
                                 OutlinedButton(
-                                    onClick = { },
+                                    onClick = { if (index == 0) showFirstColumnResults = true },
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text("ENCONTRAR") }
+                            }
+                        }
+                    }
+                    if (showFirstColumnResults && firstColumnAnalysis != null) {
+                        item {
+                            Card {
+                                Column(
+                                    Modifier.fillMaxWidth().padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text("ANÁLISIS DE LA PRIMERA COLUMNA", fontWeight = FontWeight.Bold)
+                                    Text("Número de referencia: " + firstColumnAnalysis.reference)
+                                    Text("Apariciones de la referencia en todo el historial: " + firstColumnAnalysis.occurrences)
+
+                                    Text("ARRIBA · primera columna del sorteo más reciente")
+                                    Text(
+                                        if (firstColumnAnalysis.above.top.isEmpty()) "Sin datos disponibles."
+                                        else firstColumnAnalysis.above.top.joinToString(" · ") {
+                                            it.first.toString() + " (" + it.second + ")"
+                                        }
+                                    )
+
+                                    Text("DERECHA · segunda columna del mismo sorteo")
+                                    Text(
+                                        if (firstColumnAnalysis.right.top.isEmpty()) "Sin datos disponibles."
+                                        else firstColumnAnalysis.right.top.joinToString(" · ") {
+                                            it.first.toString() + " (" + it.second + ")"
+                                        }
+                                    )
+
+                                    Text("ABAJO · primera columna del sorteo anterior")
+                                    Text(
+                                        if (firstColumnAnalysis.below.top.isEmpty()) "Sin datos disponibles."
+                                        else firstColumnAnalysis.below.top.joinToString(" · ") {
+                                            it.first.toString() + " (" + it.second + ")"
+                                        }
+                                    )
+
+                                    Text(
+                                        "Se muestran hasta cuatro números por dirección, ordenados por frecuencia " +
+                                            "de mayor a menor. Entre frecuencias iguales, se muestra primero el número menor.",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                         }
                     }
@@ -704,7 +821,10 @@ private fun SimulatorScreen(
             }
             item {
                 OutlinedButton(
-                    onClick = { showIndividualAnalysis = true },
+                    onClick = {
+                    showFirstColumnResults = false
+                    showIndividualAnalysis = true
+                },
                     enabled = history.isNotEmpty() && !isImporting && !isGenerating,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("ANÁLISIS INDIVIDUAL") }
