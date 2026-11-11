@@ -874,3 +874,22 @@ Estado:
 - [ ] Instalar y verificar el cambio en el teléfono.
 
 Actualización: 2026-11-11 11:37:00 UTC-04:00.
+
+
+## 36. Corrección de dos expectativas de prueba tras ampliar a diez resultados (2026-11-11)
+
+La ejecución de GitHub Actions del cambio de ocho a diez resultados detectó dos aserciones de prueba que no se habían ampliado junto con sus fixtures. La revisión confirmó que los cálculos de la aplicación no necesitaban cambios.
+
+Correcciones realizadas únicamente en `SecureLotteryRandomTest.kt`:
+- **Columna 1 / ABAJO:** la prueba ahora espera los nueve vecinos disponibles, del 11 al 19, correspondientes a las diez apariciones de la referencia.
+- **Columna 2 / IZQUIERDA:** la prueba ahora espera la frecuencia 10 para el valor 4, presente en las diez apariciones de la referencia.
+
+No se modificó el código de la aplicación, la interfaz, los límites de diez resultados, los rangos, el historial, el generador uniforme, los filtros ni SQLite.
+
+Estado:
+- [x] ~~Corregir las dos expectativas incorrectas de las pruebas de columna 1 y columna 2.~~ — Cambio integrado.
+- [ ] Volver a ejecutar las pruebas Android y confirmar que pasan.
+- [ ] Confirmar que la compilación Android APK termina correctamente y publica el artefacto.
+- [ ] Instalar y verificar el cambio en el teléfono.
+
+Actualización: 2026-11-11 11:57:06 UTC-04:00.
