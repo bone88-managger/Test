@@ -220,6 +220,110 @@ class SecureLotteryRandomTest {
         assertEquals((18..24).map { it to 1 }, result.below.top)
     }
 
+
+    @Test
+    fun individualColumnsThreeFourAndFiveCountAllFourDirectionsAndNeverAfterInTheirOwnColumn() {
+        val cases = listOf(
+            Triple(
+                3,
+                22,
+                listOf(
+                    Draw("2026-01-01", listOf(2, 12, 22, 32, 42), 1),
+                    Draw("2026-01-02", listOf(3, 13, 23, 33, 43), 2),
+                    Draw("2026-01-03", listOf(4, 14, 22, 34, 44), 3),
+                    Draw("2026-01-04", listOf(5, 15, 24, 35, 45), 4),
+                    Draw("2026-01-05", listOf(6, 16, 22, 36, 46), 5)
+                ),
+                listOf(23, 24)
+            ),
+            Triple(
+                4,
+                32,
+                listOf(
+                    Draw("2026-01-01", listOf(2, 12, 22, 32, 42), 1),
+                    Draw("2026-01-02", listOf(3, 13, 23, 33, 43), 2),
+                    Draw("2026-01-03", listOf(4, 14, 24, 32, 44), 3),
+                    Draw("2026-01-04", listOf(5, 15, 25, 34, 45), 4),
+                    Draw("2026-01-05", listOf(6, 16, 26, 32, 46), 5)
+                ),
+                listOf(33, 34)
+            ),
+            Triple(
+                5,
+                42,
+                listOf(
+                    Draw("2026-01-01", listOf(2, 12, 22, 32, 42), 1),
+                    Draw("2026-01-02", listOf(3, 13, 23, 33, 43), 2),
+                    Draw("2026-01-03", listOf(4, 14, 24, 34, 42), 3),
+                    Draw("2026-01-04", listOf(5, 15, 25, 35, 44), 4),
+                    Draw("2026-01-05", listOf(6, 16, 26, 36, 42), 5)
+                ),
+                listOf(43, 44)
+            )
+        )
+
+        cases.forEach { (column, reference, draws, observedAfter) ->
+            val result = analyzeLaterColumnNeighbors(draws.reversed(), column, reference)
+            assertEquals(column, result.column)
+            assertEquals(3, result.occurrences)
+            assertEquals(observedAfter.map { it to 1 }, result.above.top)
+            assertEquals(observedAfter.map { it to 1 }, result.below.top)
+            assertEquals(3, result.above.samples)
+            assertEquals(3, result.below.samples)
+            assertEquals(3, result.left.samples)
+            assertEquals(
+                (20..70).filterNot { it in observedAfter },
+                result.neverAfter
+            )
+            if (column == 5) {
+                assertTrue(result.right.top.isEmpty())
+                assertEquals(0, result.right.samples)
+            } else {
+                assertEquals(3, result.right.samples)
+                assertTrue(result.right.top.isNotEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun individualColumnsThreeFourAndFiveReturnEntireTwentyToSeventyRangeWithoutFollowingDraw() {
+        val onlyDraws = listOf(
+            3 to Draw("2026-01-01", listOf(1, 10, 22, 40, 60), 1),
+            4 to Draw("2026-01-01", listOf(1, 10, 20, 32, 60), 1),
+            5 to Draw("2026-01-01", listOf(1, 10, 20, 40, 52), 1)
+        )
+
+        onlyDraws.forEach { (column, draw) ->
+            val result = analyzeLaterColumnNeighbors(listOf(draw), column, draw.white[column - 1])
+            assertEquals(0, result.above.samples)
+            assertEquals((20..70).toList(), result.neverAfter)
+            if (column == 5) assertEquals(0, result.right.samples)
+        }
+    }
+
+    @Test
+    fun laterColumnAnalysisShowsAtMostEightResultsAndBreaksFrequencyTiesByValue() {
+        val draws = mutableListOf<Draw>()
+        for (index in 0 until 9) {
+            val day = index * 2 + 1
+            draws += Draw(
+                "2026-02-" + day.toString().padStart(2, '0'),
+                listOf(1, 10, 22, 40, 60), 1
+            )
+            draws += Draw(
+                "2026-02-" + (day + 1).toString().padStart(2, '0'),
+                listOf(2 + index, 11 + index, 23 + index, 41 + index, 61 + index), 2
+            )
+        }
+
+        val result = analyzeLaterColumnNeighbors(draws, 3, 22)
+
+        assertEquals(8, result.above.top.size)
+        assertEquals((23..30).map { it to 1 }, result.above.top)
+        assertEquals(listOf(10 to 9), result.left.top)
+        assertEquals(listOf(40 to 9), result.right.top)
+    }
+
     @Test
     fun importedDrawsMustUseOfficialMegaMillionsRanges() {
         assertTrue(isValidDrawNumbers(listOf(1, 2, 3, 4, 70), 24))
