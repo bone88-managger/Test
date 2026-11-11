@@ -65,7 +65,7 @@ class SecureLotteryRandomTest {
         assertEquals(listOf(5 to 1, 9 to 1), result.above.top)
         assertEquals(listOf(20 to 1, 22 to 1), result.right.top)
         assertEquals(listOf(5 to 1), result.below.top)
-        assertEquals(1, result.above.samples)
+        assertEquals(2, result.above.samples)
         assertEquals(2, result.right.samples)
         assertEquals(1, result.below.samples)
     }
