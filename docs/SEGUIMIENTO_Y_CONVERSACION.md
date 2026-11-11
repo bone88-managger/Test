@@ -699,17 +699,37 @@ Actualización: 2026-11-11 08:34:59 UTC-04:00.
 Cambios solicitados por el usuario:
 - El resultado del análisis de la primera columna debe aparecer inmediatamente debajo del botón **ENCONTRAR** de esa columna, no al final de la pantalla.
 - Aumentar de cuatro a ocho los números mostrados por cada dirección (**ARRIBA**, **DERECHA** y **ABAJO**), conservando el orden por frecuencia descendente y el desempate por valor ascendente.
-- Mostrar el rango posible de números de cada columna: pendiente de confirmar el significado exacto solicitado por el usuario antes de implementar este tercer ajuste.
+- Mostrar el rango histórico real de cada columna: calcular el menor y el mayor valor observado en esa columna usando todos los sorteos oficiales importados. Por ejemplo, si la primera columna contiene valores desde 1 hasta 25, mostrar **1–25**. El rango no se fija manualmente ni se deduce del rango general del juego.
 
 Alcance:
-- Solo se cambia la ubicación visual de la tarjeta y el máximo de resultados del análisis individual.
-- No se modifica el cálculo de vecinos, el análisis histórico, la generación uniforme, los filtros ni SQLite.
+- Se calcula para cada una de las cinco columnas el mínimo y máximo observado en todos los sorteos oficiales importados y se muestra debajo del número de esa columna.
+- El rango se recalcula cuando cambia el historial oficial importado.
+- No se modifica el cálculo de vecinos, la generación uniforme, los filtros ni SQLite.
 
 Estado:
 - [x] ~~Mover los resultados inmediatamente debajo del botón ENCONTRAR de la primera columna.~~ — Código actualizado.
 - [x] ~~Aumentar el máximo de resultados de cuatro a ocho por dirección.~~ — Código actualizado y prueba ajustada.
-- [ ] Confirmar el rango que el usuario quiere mostrar por columna.
+- [x] ~~Confirmar e implementar el rango histórico real (mínimo–máximo) de cada columna.~~ — Aprobado por el usuario e integrado en el código.
+- [x] ~~Añadir pruebas para los rangos históricos de las cinco columnas y el historial vacío.~~ — Pruebas añadidas; pendientes de ejecución en CI.
 - [ ] Ejecutar pruebas automatizadas y confirmar la compilación APK.
 - [ ] Verificar la presentación en el teléfono.
 
 Actualización: 2026-11-11 08:48:00 UTC-04:00.
+
+
+### Implementación del rango histórico por columna (2026-11-11)
+
+- Se añadió el cálculo del mínimo y máximo observado de cada columna, recorriendo todos los sorteos oficiales importados.
+- La pantalla **ANÁLISIS INDIVIDUAL** muestra el texto **RANGO HISTÓRICO: mínimo–máximo** debajo del número de cada una de las cinco columnas.
+- El cálculo se actualiza al cambiar el historial importado. Si no hay datos para una columna, se muestra **Sin datos**.
+- Se añadieron pruebas unitarias para verificar los rangos de las cinco columnas y el caso de historial vacío.
+- No se cambió el generador uniforme, el análisis de vecinos, los filtros ni SQLite.
+
+Estado de verificación:
+- [x] ~~Implementar el cálculo y mostrar el rango histórico en las cinco columnas.~~ — Código integrado.
+- [x] ~~Añadir pruebas unitarias para mínimos, máximos y ausencia de historial.~~ — Pruebas añadidas.
+- [ ] Confirmar que las pruebas Android pasan en GitHub Actions.
+- [ ] Confirmar que la compilación Android APK termina correctamente y publica el artefacto.
+- [ ] Instalar y verificar la presentación en el teléfono.
+
+Actualización: 2026-11-11 08:57:53 UTC-04:00.
