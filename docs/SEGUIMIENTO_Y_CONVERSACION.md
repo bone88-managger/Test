@@ -692,3 +692,24 @@ Actualización: 2026-11-11 08:31:04 UTC-04:00.
 - [ ] Verificar compilación y artefacto APK en la siguiente ejecución.
 
 Actualización: 2026-11-11 08:34:59 UTC-04:00.
+
+
+## 30. Ajustes de presentación del análisis individual (2026-11-11)
+
+Cambios solicitados por el usuario:
+- El resultado del análisis de la primera columna debe aparecer inmediatamente debajo del botón **ENCONTRAR** de esa columna, no al final de la pantalla.
+- Aumentar de cuatro a ocho los números mostrados por cada dirección (**ARRIBA**, **DERECHA** y **ABAJO**), conservando el orden por frecuencia descendente y el desempate por valor ascendente.
+- Mostrar el rango posible de números de cada columna: pendiente de confirmar el significado exacto solicitado por el usuario antes de implementar este tercer ajuste.
+
+Alcance:
+- Solo se cambia la ubicación visual de la tarjeta y el máximo de resultados del análisis individual.
+- No se modifica el cálculo de vecinos, el análisis histórico, la generación uniforme, los filtros ni SQLite.
+
+Estado:
+- [x] ~~Mover los resultados inmediatamente debajo del botón ENCONTRAR de la primera columna.~~ — Código actualizado.
+- [x] ~~Aumentar el máximo de resultados de cuatro a ocho por dirección.~~ — Código actualizado y prueba ajustada.
+- [ ] Confirmar el rango que el usuario quiere mostrar por columna.
+- [ ] Ejecutar pruebas automatizadas y confirmar la compilación APK.
+- [ ] Verificar la presentación en el teléfono.
+
+Actualización: 2026-11-11 08:48:00 UTC-04:00.
