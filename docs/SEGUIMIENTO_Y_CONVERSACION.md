@@ -798,3 +798,21 @@ Estado:
 - [ ] Instalar y verificar el análisis en el teléfono.
 
 Actualización: 2026-11-11 10:51:49 UTC-04:00.
+
+
+## 33. Corrección de la prueba Android de la segunda columna (2026-11-11)
+
+La ejecución de GitHub Actions detectó un único fallo en `individualSecondColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue` (30 pruebas ejecutadas, 1 fallida). La revisión del caso confirmó que el conjunto de datos ya contenía ocho apariciones de la referencia 17 en la segunda columna. El error estaba en la expectativa de **IZQUIERDA**: el valor 4 aparece en las ocho apariciones, por lo que su frecuencia correcta es 8 y no 1.
+
+Corrección aplicada:
+- Se ajustó únicamente la aserción de la frecuencia izquierda para esperar `4 → 8`.
+- No se modificó la lógica de análisis, la interfaz, el generador uniforme, los filtros, SQLite ni los historiales.
+- La compilación Kotlin había terminado correctamente; el flujo se detuvo al fallar la prueba y por eso no llegó a ejecutar la tarea de generar el APK.
+
+Estado tras la corrección:
+- [x] ~~Corregir la expectativa incorrecta de frecuencia en la prueba de la segunda columna.~~ — Cambio integrado.
+- [ ] Volver a ejecutar las pruebas unitarias Android en GitHub Actions.
+- [ ] Confirmar la compilación APK y la publicación del artefacto.
+- [ ] Instalar y verificar el análisis en el teléfono.
+
+Actualización: 2026-11-11 11:09:41 UTC-04:00.
