@@ -250,7 +250,7 @@ internal fun analyzeSecondColumnNeighbors(
             samples = counts.values.sum(),
             top = counts.entries
                 .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
-                .take(8)
+                .take(10)
                 .map { it.key to it.value }
         )
 
@@ -312,7 +312,7 @@ internal fun analyzeLaterColumnNeighbors(
             samples = counts.values.sum(),
             top = counts.entries
                 .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
-                .take(8)
+                .take(10)
                 .map { it.key to it.value }
         )
 
@@ -366,7 +366,7 @@ internal fun analyzeFirstColumnNeighbors(
             samples = counts.values.sum(),
             top = counts.entries
                 .sortedWith(compareByDescending<Map.Entry<Int, Int>> { it.value }.thenBy { it.key })
-                .take(8)
+                .take(10)
                 .map { it.key to it.value }
         )
 
@@ -863,7 +863,7 @@ private fun SimulatorScreen(
                                             )
 
                                             Text(
-                                                "Se muestran hasta ocho números por dirección, ordenados por frecuencia " +
+                                                "Se muestran hasta diez números por dirección, ordenados por frecuencia " +
                                                     "de mayor a menor. Entre frecuencias iguales, se muestra primero el número menor.",
                                                 style = MaterialTheme.typography.bodySmall
                                             )
@@ -928,7 +928,7 @@ private fun SimulatorScreen(
                                             )
 
                                             Text(
-                                                "Se muestran hasta ocho números por dirección, ordenados por frecuencia " +
+                                                "Se muestran hasta diez números por dirección, ordenados por frecuencia " +
                                                     "de mayor a menor. Entre frecuencias iguales, se muestra primero el número menor.",
                                                 style = MaterialTheme.typography.bodySmall
                                             )
@@ -977,7 +977,7 @@ private fun SimulatorScreen(
                                             )
 
                                             Text(
-                                                "Se muestran hasta ocho números por dirección, ordenados por frecuencia " +
+                                                "Se muestran hasta diez números por dirección, ordenados por frecuencia " +
                                                     "de mayor a menor. Entre frecuencias iguales, se muestra primero el número menor.",
                                                 style = MaterialTheme.typography.bodySmall
                                             )
