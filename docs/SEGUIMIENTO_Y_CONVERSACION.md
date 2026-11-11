@@ -816,3 +816,40 @@ Estado tras la corrección:
 - [ ] Instalar y verificar el análisis en el teléfono.
 
 Actualización: 2026-11-11 11:09:41 UTC-04:00.
+
+## 34. Análisis individual de las columnas 3, 4 y 5 (2026-11-11)
+
+El usuario confirmó extender a las columnas 3, 4 y 5 el análisis individual que ya existe para las columnas 1 y 2.
+
+Reglas implementadas:
+- La referencia de cada análisis es el número de esa columna en el último sorteo oficial.
+- Se consideran todas las apariciones de esa referencia en la misma columna a lo largo del historial oficial, ordenado cronológicamente.
+- **ARRIBA:** valor de la misma columna en el sorteo inmediatamente siguiente (más reciente).
+- **ABAJO:** valor de la misma columna en el sorteo inmediatamente anterior (más antiguo).
+- **IZQUIERDA:** valor de la columna inmediatamente anterior en el mismo sorteo.
+- **DERECHA:** valor de la columna inmediatamente posterior en el mismo sorteo, cuando existe. La columna 5 no tiene columna a su derecha y no se inventan valores.
+- Se cuentan todas las frecuencias y se muestran hasta ocho números por dirección, ordenados por frecuencia descendente y, en caso de empate, por valor ascendente.
+- **NUNCA SALIERON DESPUÉS:** se buscan los valores del rango fijo 20–70 que nunca aparecieron en la misma columna analizada del sorteo inmediatamente siguiente a cada aparición de la referencia. No se consulta otra columna para esta lista.
+- Una aparición de referencia en el último sorteo no aporta una muestra de ARRIBA ni de NUNCA SALIERON DESPUÉS si no existe un sorteo posterior.
+
+Presentación y alcance:
+- Se activan los botones ENCONTRAR de las columnas 3, 4 y 5 y cada resultado aparece debajo de su botón correspondiente.
+- En la columna 5, DERECHA indica que no existe una columna a la derecha.
+- Los análisis de las columnas 1 y 2 se conservan.
+- No se modifica el generador uniforme, los filtros, SQLite ni los historiales aceptados/rechazados.
+
+Cambios integrados:
+- Código: análisis generalizado para columnas 3–5 y presentación individual debajo de cada botón.
+- Pruebas: casos de las tres columnas para las cuatro direcciones existentes, frecuencia, rango 20–70, ausencia de sorteo siguiente y límite de ocho resultados con desempate por valor.
+- Commits de código y pruebas: `61b14f3d204665145990547a0b8c479a7657ef87`, `1d1f8764ef099a47270e55b4c3c8dc4d4d28866a` y corrección de fixtures `7f3dbc4d45d1fda5abcdbf41aab3a1a686ad8311`.
+
+Estado:
+- [x] ~~Implementar los análisis de ARRIBA, ABAJO, IZQUIERDA y DERECHA para las columnas 3, 4 y 5, respetando que la columna 5 no tiene DERECHA.~~ — Código integrado.
+- [x] ~~Implementar NUNCA SALIERON DESPUÉS en el rango 20–70 usando exclusivamente la misma columna analizada del sorteo siguiente.~~ — Código integrado.
+- [x] ~~Activar los botones ENCONTRAR de las columnas 3, 4 y 5 y mostrar cada resultado debajo del botón correspondiente.~~ — Código integrado.
+- [x] ~~Añadir pruebas unitarias para las tres columnas, orientación, frecuencias, rango, extremos del historial y máximo de ocho resultados.~~ — Pruebas añadidas; pendientes de ejecución en CI.
+- [ ] Confirmar que las pruebas Android pasan en GitHub Actions.
+- [ ] Confirmar que la compilación APK termina correctamente y publica el artefacto.
+- [ ] Instalar y verificar los tres análisis en el teléfono.
+
+Actualización: 2026-11-11 11:31:56 UTC-04:00.
