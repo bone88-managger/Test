@@ -623,3 +623,30 @@ Actualización: 2026-11-09 18:02:33 UTC-04:00.
 - Si una columna no tiene datos de aumento o disminución, se informa por separado que no hay datos para ese ejemplo.
 - Este ajuste es exclusivamente visual: no cambia el análisis histórico, sus datos, la generación uniforme ni las reglas de validación.
 - Cambio de código: `d7c4f604f552c25bddf2ea895c7e0c169936e023`.
+
+## 28. Estructura inicial de la pantalla de análisis individual (2026-11-11)
+
+Se añadió una pantalla independiente llamada **ANÁLISIS INDIVIDUAL**, accesible desde un nuevo botón en la pantalla principal.
+
+Implementación de esta primera etapa:
+- El botón abre una pantalla nueva y separada del análisis histórico por columnas.
+- La pantalla identifica el último sorteo oficial usando el mismo orden cronológico del historial importado.
+- Muestra las cinco bolas blancas individualmente, identificadas como columnas 1 a 5.
+- Debajo de cada número aparece su propio botón **ENCONTRAR**.
+- Se añadió el botón **VOLVER** para regresar a la pantalla principal.
+- Si no hay historial oficial importado, la pantalla informa que se debe cargar un PDF o CSV.
+
+Alcance deliberadamente limitado:
+- Los botones **ENCONTRAR** todavía no ejecutan ninguna búsqueda ni análisis. Su función se definirá paso a paso según las instrucciones del usuario.
+- No se modificaron la generación uniforme, los filtros, SQLite, los historiales aceptados/rechazados ni la pantalla de análisis histórico existente.
+
+Cambio de código:
+- Commit: `cb67ec17d35d4a24b79d665f4dbce8c741618ae8`.
+
+Estado:
+- [x] ~~Añadir el botón de acceso y la estructura de la pantalla ANÁLISIS INDIVIDUAL con cinco columnas y sus botones ENCONTRAR.~~ — Código integrado en GitHub.
+- [ ] Confirmar que las pruebas automatizadas del commit terminan correctamente.
+- [ ] Confirmar que GitHub Actions compila la APK y publica el artefacto.
+- [ ] Instalar/probar la pantalla en el teléfono y confirmar la presentación.
+
+Actualización: 2026-11-11 07:00 UTC-04:00.
