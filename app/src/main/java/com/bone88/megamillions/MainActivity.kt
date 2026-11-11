@@ -151,6 +151,22 @@ internal fun analyzeOfficialDrawHistory(history: List<Draw>): HistoricalColumnAn
 }
 
 
+internal data class HistoricalColumnRange(
+    val column: Int,
+    val minimum: Int?,
+    val maximum: Int?
+)
+
+internal fun analyzeHistoricalColumnRanges(history: List<Draw>): List<HistoricalColumnRange> =
+    (0 until WHITE_COUNT).map { column ->
+        val values = history.mapNotNull { it.white.getOrNull(column) }
+        HistoricalColumnRange(
+            column = column + 1,
+            minimum = values.minOrNull(),
+            maximum = values.maxOrNull()
+        )
+    }
+
 internal data class NeighborFrequency(
     val samples: Int,
     val top: List<Pair<Int, Int>>
@@ -579,6 +595,7 @@ private fun SimulatorScreen(
             val firstColumnAnalysis = remember(history, latestOfficialDraw) {
                 latestOfficialDraw?.let { analyzeFirstColumnNeighbors(history, it.white[0]) }
             }
+            val historicalColumnRanges = remember(history) { analyzeHistoricalColumnRanges(history) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(20.dp),
@@ -617,6 +634,16 @@ private fun SimulatorScreen(
                             ) {
                                 Text("COLUMNA " + (index + 1), fontWeight = FontWeight.Bold)
                                 NumberBall(latestOfficialDraw.white[index].toString())
+                                val columnRange = historicalColumnRanges[index]
+                                Text(
+                                    if (columnRange.minimum != null && columnRange.maximum != null) {
+                                        "RANGO HISTÓRICO: " + columnRange.minimum + "–" + columnRange.maximum
+                                    } else {
+                                        "RANGO HISTÓRICO: Sin datos"
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
                                 OutlinedButton(
                                     onClick = { if (index == 0) showFirstColumnResults = true },
                                     modifier = Modifier.fillMaxWidth()
