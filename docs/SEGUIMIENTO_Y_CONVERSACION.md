@@ -766,3 +766,35 @@ Estado:
 - [ ] Instalar y verificar el resultado en el teléfono.
 
 Actualización: 2026-11-11 09:19:54 UTC-04:00.
+
+
+## 32. Análisis individual de la segunda columna (2026-11-11)
+
+El usuario aprobó aplicar a la segunda columna el mismo análisis histórico de vecinos usado en la primera, agregando los dos lados y usando el rango fijo 15–40 para los números que nunca aparecieron después de la referencia.
+
+Reglas implementadas:
+- La referencia es el número de la segunda columna del último sorteo oficial.
+- Se consideran todas las apariciones de ese número en la segunda columna de todos los sorteos oficiales, ordenados cronológicamente.
+- **ARRIBA:** segunda columna del sorteo inmediatamente siguiente (más reciente).
+- **ABAJO:** segunda columna del sorteo inmediatamente anterior (más antiguo).
+- **IZQUIERDA:** primera columna del mismo sorteo donde aparece la referencia.
+- **DERECHA:** tercera columna del mismo sorteo donde aparece la referencia.
+- Se cuentan las frecuencias de todos los vecinos existentes y se muestran hasta ocho valores por dirección, en frecuencia descendente y con desempate por número ascendente.
+- **NUNCA SALIERON DESPUÉS:** valores del rango fijo 15–40 que nunca aparecieron en la segunda columna del sorteo inmediatamente siguiente a una aparición de la referencia. No se incluyen otras columnas; la última aparición de referencia no aporta muestra si no existe sorteo posterior.
+
+Presentación y alcance:
+- Se activa el botón **ENCONTRAR** de la columna 2 y el resultado aparece debajo de ese botón.
+- La columna 1 conserva su análisis anterior sin cambios.
+- Las columnas 3 a 5 siguen sin función de análisis.
+- No se modifica el rango histórico visual, el generador uniforme, los filtros, SQLite ni los historiales aceptados/rechazados.
+
+Estado:
+- [x] ~~Implementar el análisis de vecinos ARRIBA/ABAJO/IZQUIERDA/DERECHA de la segunda columna.~~ — Código actualizado.
+- [x] ~~Implementar NUNCA SALIERON DESPUÉS dentro del rango fijo 15–40.~~ — Código actualizado.
+- [x] ~~Activar el resultado debajo del botón ENCONTRAR de la columna 2.~~ — Código actualizado.
+- [x] ~~Añadir pruebas unitarias para orientación, múltiples apariciones, límites del historial, rango 15–40 y desempates.~~ — Pruebas añadidas.
+- [ ] Confirmar las pruebas Android en GitHub Actions.
+- [ ] Confirmar la compilación APK y la publicación del artefacto.
+- [ ] Instalar y verificar el análisis en el teléfono.
+
+Actualización: 2026-11-11 10:51:49 UTC-04:00.

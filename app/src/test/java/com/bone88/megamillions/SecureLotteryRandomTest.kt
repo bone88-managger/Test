@@ -144,6 +144,82 @@ class SecureLotteryRandomTest {
         assertEquals((11..17).map { it to 1 }, result.below.top)
     }
 
+
+    @Test
+    fun individualSecondColumnAnalysisCountsAllOccurrencesAndUsesFourDirections() {
+        val olderReference = Draw("2026-01-01", listOf(4, 7, 20, 40, 50), 1)
+        val firstNext = Draw("2026-01-08", listOf(5, 9, 21, 41, 51), 2)
+        val middleReference = Draw("2026-01-15", listOf(6, 7, 22, 42, 52), 3)
+        val secondNext = Draw("2026-01-22", listOf(8, 15, 23, 43, 53), 4)
+        val latestReference = Draw("2026-01-29", listOf(9, 7, 24, 44, 54), 5)
+
+        val result = analyzeSecondColumnNeighbors(
+            listOf(latestReference, secondNext, olderReference, firstNext, middleReference),
+            7
+        )
+
+        assertEquals(3, result.occurrences)
+        assertEquals(listOf(9 to 1, 15 to 1), result.above.top)
+        assertEquals(listOf(4 to 1, 6 to 1, 9 to 1), result.left.top)
+        assertEquals(listOf(20 to 1, 22 to 1, 24 to 1), result.right.top)
+        assertEquals(listOf(9 to 1, 15 to 1), result.below.top)
+        assertEquals(2, result.above.samples)
+        assertEquals(3, result.left.samples)
+        assertEquals(3, result.right.samples)
+        assertEquals(2, result.below.samples)
+    }
+
+    @Test
+    fun individualSecondColumnAnalysisListsNumbersFromFifteenToFortyNeverSeenInNextDraw() {
+        val firstReference = Draw("2026-01-01", listOf(4, 17, 20, 40, 50), 1)
+        val firstNext = Draw("2026-01-08", listOf(5, 18, 21, 41, 51), 2)
+        val secondReference = Draw("2026-01-15", listOf(6, 17, 22, 42, 52), 3)
+        val secondNext = Draw("2026-01-22", listOf(8, 25, 23, 43, 53), 4)
+        val latestReference = Draw("2026-01-29", listOf(9, 17, 24, 44, 54), 5)
+
+        val result = analyzeSecondColumnNeighbors(
+            listOf(latestReference, secondNext, firstReference, firstNext, secondReference),
+            17
+        )
+
+        assertEquals((15..40).filterNot { it == 18 || it == 25 }, result.neverAfter)
+        assertEquals(2, result.above.samples)
+    }
+
+    @Test
+    fun individualSecondColumnAnalysisReturnsAllFifteenToFortyWhenNoFollowingDrawExists() {
+        val onlyReference = Draw("2026-01-01", listOf(4, 17, 20, 40, 50), 1)
+
+        val result = analyzeSecondColumnNeighbors(listOf(onlyReference), 17)
+
+        assertEquals((15..40).toList(), result.neverAfter)
+        assertEquals(0, result.above.samples)
+    }
+
+    @Test
+    fun individualSecondColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue() {
+        val draws = mutableListOf<Draw>()
+        for (index in 0 until 8) {
+            val day = index * 2 + 1
+            draws += Draw(
+                "2026-02-" + day.toString().padStart(2, '0'),
+                listOf(4, 17, 20 + index, 40 + index, 50 + index), 1
+            )
+            draws += Draw(
+                "2026-02-" + (day + 1).toString().padStart(2, '0'),
+                listOf(5, 18 + index, 28 + index, 41 + index, 60 + index), 2
+            )
+        }
+
+        val result = analyzeSecondColumnNeighbors(draws, 17)
+
+        assertEquals(8, result.above.top.size)
+        assertEquals((18..25).map { it to 1 }, result.above.top)
+        assertEquals((4..4).map { it to 1 }, result.left.top)
+        assertEquals((20..27).map { it to 1 }, result.right.top)
+        assertEquals((18..24).map { it to 1 }, result.below.top)
+    }
+
     @Test
     fun importedDrawsMustUseOfficialMegaMillionsRanges() {
         assertTrue(isValidDrawNumbers(listOf(1, 2, 3, 4, 70), 24))
