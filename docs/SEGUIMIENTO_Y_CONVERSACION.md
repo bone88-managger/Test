@@ -679,3 +679,16 @@ Estado:
 - [ ] Revisar el resultado en el teléfono.
 
 Actualización: 2026-11-11 08:31:04 UTC-04:00.
+
+
+### Corrección tras la primera ejecución de CI (2026-11-11)
+
+- La compilación Kotlin de la aplicación sí terminó correctamente.
+- La tarea `:app:testDebugUnitTest` falló en la prueba `individualFirstColumnAnalysisCountsAllOccurrencesAndUsesRequestedDirections`, por una expectativa incorrecta del test: había dos apariciones de la referencia que sí tenían un sorteo más reciente, pero el test esperaba una muestra.
+- Se corrigió la aserción para esperar dos muestras de **ARRIBA**. El cálculo de vecinos no se modificó.
+- Commit de corrección de prueba: `86b595006106e43970163559a8670bf2fb3bf9f0`.
+- La APK no se generó en esa ejecución porque el flujo omite los pasos de compilación y subida del APK cuando fallan las pruebas.
+- [ ] Verificar que las pruebas pasen con la corrección.
+- [ ] Verificar compilación y artefacto APK en la siguiente ejecución.
+
+Actualización: 2026-11-11 08:34:59 UTC-04:00.
