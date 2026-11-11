@@ -733,3 +733,36 @@ Estado de verificación:
 - [ ] Instalar y verificar la presentación en el teléfono.
 
 Actualización: 2026-11-11 08:57:53 UTC-04:00.
+
+
+## 31. Números del 1 al 25 que nunca han salido después de la referencia (2026-11-11)
+
+El usuario confirmó que esta búsqueda debe limitarse a los números del **1 al 25** y considerar únicamente la **primera columna del sorteo inmediatamente siguiente** a cada aparición del número de referencia.
+
+Lógica aprobada e implementada:
+- Se toma como referencia el número de la primera columna del último sorteo oficial.
+- Se localizan todas sus apariciones en la primera columna del historial oficial, ordenado cronológicamente.
+- Para cada aparición que tenga un sorteo posterior, se registra únicamente la primera columna de ese sorteo siguiente.
+- Se muestra la lista de valores del 1 al 25 que no aparecen ni una sola vez entre esos números posteriores.
+- Una aparición de referencia en el último sorteo no aporta una muestra, porque no existe un sorteo siguiente en el historial.
+- Si no existe ninguna muestra posterior, se presentan como no observados todos los números del 1 al 25.
+
+Presentación:
+- El nuevo resultado aparece dentro del análisis de la primera columna, debajo del bloque **ARRIBA**.
+- Se identifica como **NUNCA SALIERON DESPUÉS**, aclarando que se refiere a la primera columna del sorteo siguiente y al universo 1–25.
+- No se incluyen las columnas 2 a 5 ni la segunda columna del mismo sorteo.
+
+Alcance preservado:
+- No se cambia el análisis de DERECHA ni ABAJO.
+- No se modifica el rango histórico calculado para mostrar mínimo y máximo.
+- No se altera la generación uniforme, los filtros, SQLite ni los historiales aceptados/rechazados.
+
+Estado:
+- [x] ~~Implementar la búsqueda de valores ausentes dentro del rango 1–25.~~ — Código actualizado.
+- [x] ~~Mostrar el resultado en la pantalla ANÁLISIS INDIVIDUAL.~~ — Código actualizado.
+- [x] ~~Añadir pruebas para múltiples apariciones, orden cronológico y ausencia de sorteo posterior.~~ — Pruebas añadidas.
+- [ ] Confirmar que las pruebas automatizadas pasan en GitHub Actions.
+- [ ] Confirmar que la compilación Android APK termina correctamente y publica el artefacto.
+- [ ] Instalar y verificar el resultado en el teléfono.
+
+Actualización: 2026-11-11 09:19:54 UTC-04:00.
