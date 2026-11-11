@@ -151,7 +151,7 @@ class SecureLotteryRandomTest {
         val firstNext = Draw("2026-01-08", listOf(5, 9, 21, 41, 51), 2)
         val middleReference = Draw("2026-01-15", listOf(6, 7, 22, 42, 52), 3)
         val secondNext = Draw("2026-01-22", listOf(8, 15, 23, 43, 53), 4)
-        val latestReference = Draw("2026-01-29", listOf(9, 7, 24, 44, 54), 5)
+        val latestReference = Draw("2026-01-29", listOf(3, 7, 24, 44, 54), 5)
 
         val result = analyzeSecondColumnNeighbors(
             listOf(latestReference, secondNext, olderReference, firstNext, middleReference),
@@ -160,7 +160,7 @@ class SecureLotteryRandomTest {
 
         assertEquals(3, result.occurrences)
         assertEquals(listOf(9 to 1, 15 to 1), result.above.top)
-        assertEquals(listOf(4 to 1, 6 to 1, 9 to 1), result.left.top)
+        assertEquals(listOf(3 to 1, 4 to 1, 6 to 1), result.left.top)
         assertEquals(listOf(20 to 1, 22 to 1, 24 to 1), result.right.top)
         assertEquals(listOf(9 to 1, 15 to 1), result.below.top)
         assertEquals(2, result.above.samples)
@@ -174,7 +174,7 @@ class SecureLotteryRandomTest {
         val firstReference = Draw("2026-01-01", listOf(4, 17, 20, 40, 50), 1)
         val firstNext = Draw("2026-01-08", listOf(5, 18, 21, 41, 51), 2)
         val secondReference = Draw("2026-01-15", listOf(6, 17, 22, 42, 52), 3)
-        val secondNext = Draw("2026-01-22", listOf(8, 25, 23, 43, 53), 4)
+        val secondNext = Draw("2026-01-22", listOf(8, 25, 33, 43, 53), 4)
         val latestReference = Draw("2026-01-29", listOf(9, 17, 24, 44, 54), 5)
 
         val result = analyzeSecondColumnNeighbors(
