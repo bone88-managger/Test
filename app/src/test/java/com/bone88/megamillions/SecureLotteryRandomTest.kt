@@ -71,25 +71,20 @@ class SecureLotteryRandomTest {
     }
 
     @Test
-    fun individualFirstColumnAnalysisReturnsAtMostFourNumbersAndBreaksTiesByValue() {
-        val draws = listOf(
-            Draw("2026-01-01", listOf(10, 40, 50, 60, 70), 1),
-            Draw("2026-01-02", listOf(7, 20, 30, 40, 50), 2),
-            Draw("2026-01-03", listOf(11, 41, 51, 61, 69), 3),
-            Draw("2026-01-04", listOf(7, 21, 31, 41, 51), 4),
-            Draw("2026-01-05", listOf(12, 42, 52, 62, 68), 5),
-            Draw("2026-01-06", listOf(7, 22, 32, 42, 52), 6),
-            Draw("2026-01-07", listOf(13, 43, 53, 63, 67), 7),
-            Draw("2026-01-08", listOf(7, 23, 33, 43, 53), 8),
-            Draw("2026-01-09", listOf(14, 44, 54, 64, 66), 9)
-        )
+    fun individualFirstColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue() {
+        val draws = mutableListOf<Draw>()
+        for (index in 0 until 8) {
+            val day = index * 2 + 1
+            draws += Draw("2026-02-" + day.toString().padStart(2, '0'), listOf(7, 20 + index, 30 + index, 40 + index, 50 + index), 1)
+            draws += Draw("2026-02-" + (day + 1).toString().padStart(2, '0'), listOf(11 + index, 21 + index, 31 + index, 41 + index, 51 + index), 2)
+        }
 
         val result = analyzeFirstColumnNeighbors(draws, 7)
 
-        assertEquals(4, result.above.top.size)
-        assertEquals(listOf(11 to 1, 12 to 1, 13 to 1, 14 to 1), result.above.top)
-        assertEquals(listOf(20 to 1, 21 to 1, 22 to 1, 23 to 1), result.right.top)
-        assertEquals(listOf(10 to 1, 11 to 1, 12 to 1, 13 to 1), result.below.top)
+        assertEquals(8, result.above.top.size)
+        assertEquals((11..18).map { it to 1 }, result.above.top)
+        assertEquals((20..27).map { it to 1 }, result.right.top)
+        assertEquals((11..17).map { it to 1 }, result.below.top)
     }
 
     @Test
