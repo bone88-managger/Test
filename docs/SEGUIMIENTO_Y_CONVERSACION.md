@@ -853,3 +853,24 @@ Estado:
 - [ ] Instalar y verificar los tres análisis en el teléfono.
 
 Actualización: 2026-11-11 11:31:56 UTC-04:00.
+
+
+## 35. Aumento del máximo de resultados de ocho a diez (2026-11-11)
+
+El usuario autorizó cambiar únicamente la cantidad máxima de números mostrados por dirección en los análisis individuales.
+
+Cambio realizado:
+- Se aumentó de 8 a 10 el límite de resultados para las columnas 1, 2, 3, 4 y 5.
+- Se mantuvo el orden por frecuencia descendente y, en caso de empate, por valor numérico ascendente.
+- Se actualizaron los textos informativos de la pantalla para indicar que se muestran hasta diez números por dirección.
+- Se ajustaron las pruebas existentes para verificar diez resultados y ampliar sus datos de prueba; se conservaron las comprobaciones de frecuencias, orden y desempates.
+- No se modificaron rangos, reglas de búsqueda, referencias, historial, generador uniforme, filtros, SQLite ni otras funciones.
+
+Estado:
+- [x] ~~Cambiar únicamente el límite de ocho a diez resultados por dirección en los cinco análisis individuales.~~ — Código actualizado.
+- [x] ~~Actualizar las pruebas afectadas para comprobar el nuevo máximo de diez resultados.~~ — Pruebas actualizadas.
+- [ ] Confirmar que las pruebas Android pasan en GitHub Actions.
+- [ ] Confirmar la compilación APK y la publicación del artefacto.
+- [ ] Instalar y verificar el cambio en el teléfono.
+
+Actualización: 2026-11-11 11:37:00 UTC-04:00.
