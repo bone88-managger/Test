@@ -893,3 +893,21 @@ Estado:
 - [ ] Instalar y verificar el cambio en el teléfono.
 
 Actualización: 2026-11-11 11:57:06 UTC-04:00.
+
+## 37. Corrección de la última expectativa de prueba tras ampliar a diez resultados (2026-11-11)
+
+La siguiente ejecución de GitHub Actions detectó un único fallo en `individualSecondColumnAnalysisReturnsUpToTenNumbersAndBreaksTiesByValue`, en la expectativa de **ABAJO** de la columna 2.
+
+La revisión del fixture confirma que hay diez apariciones de la referencia en la segunda columna. Para **ABAJO** existen nueve sorteos inmediatamente anteriores (el sorteo más antiguo no tiene uno anterior), por lo que los vecinos válidos son los valores del 18 al 26.
+
+Corrección autorizada y aplicada:
+- Se cambió únicamente la expectativa de `(18..24)` a `(18..26)` en `SecureLotteryRandomTest.kt`.
+- No se modificó el código productivo, la lógica de análisis, la interfaz, los rangos, el generador uniforme, los filtros, SQLite ni otros tests.
+
+Estado:
+- [x] ~~Corregir la expectativa de ABAJO de la columna 2 para incluir los nueve vecinos disponibles (18–26).~~ — Cambio integrado.
+- [ ] Volver a ejecutar las pruebas Android y confirmar que pasan.
+- [ ] Confirmar que la compilación Android APK termina correctamente y publica el artefacto.
+- [ ] Instalar y verificar el cambio en el teléfono.
+
+Actualización: 2026-11-11 12:06:18 UTC-04:00.
