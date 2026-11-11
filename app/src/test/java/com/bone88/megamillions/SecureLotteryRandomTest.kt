@@ -98,6 +98,35 @@ class SecureLotteryRandomTest {
         assertEquals(1, result.below.samples)
     }
 
+
+    @Test
+    fun individualFirstColumnAnalysisListsNumbersFromOneToTwentyFiveNeverSeenInNextDraw() {
+        val olderReference = Draw("2026-01-01", listOf(7, 20, 30, 40, 50), 1)
+        val firstNext = Draw("2026-01-08", listOf(5, 21, 31, 41, 51), 2)
+        val middleReference = Draw("2026-01-15", listOf(7, 22, 32, 42, 52), 3)
+        val secondNext = Draw("2026-01-22", listOf(9, 23, 33, 43, 53), 4)
+        val latestReference = Draw("2026-01-29", listOf(7, 24, 34, 44, 54), 5)
+
+        // The latest reference has no following draw and must not add a sample.
+        val result = analyzeFirstColumnNeighbors(
+            listOf(latestReference, secondNext, olderReference, firstNext, middleReference),
+            7
+        )
+
+        assertEquals((1..25).filterNot { it == 5 || it == 9 }, result.neverAfter)
+        assertEquals(2, result.above.samples)
+    }
+
+    @Test
+    fun individualFirstColumnAnalysisReturnsAllOneToTwentyFiveWhenNoFollowingDrawExists() {
+        val onlyReference = Draw("2026-01-01", listOf(7, 20, 30, 40, 50), 1)
+
+        val result = analyzeFirstColumnNeighbors(listOf(onlyReference), 7)
+
+        assertEquals((1..25).toList(), result.neverAfter)
+        assertEquals(0, result.above.samples)
+    }
+
     @Test
     fun individualFirstColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue() {
         val draws = mutableListOf<Draw>()
