@@ -128,9 +128,9 @@ class SecureLotteryRandomTest {
     }
 
     @Test
-    fun individualFirstColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue() {
+    fun individualFirstColumnAnalysisReturnsUpToTenNumbersAndBreaksTiesByValue() {
         val draws = mutableListOf<Draw>()
-        for (index in 0 until 8) {
+        for (index in 0 until 10) {
             val day = index * 2 + 1
             draws += Draw("2026-02-" + day.toString().padStart(2, '0'), listOf(7, 20 + index, 30 + index, 40 + index, 50 + index), 1)
             draws += Draw("2026-02-" + (day + 1).toString().padStart(2, '0'), listOf(11 + index, 21 + index, 31 + index, 41 + index, 51 + index), 2)
@@ -138,9 +138,9 @@ class SecureLotteryRandomTest {
 
         val result = analyzeFirstColumnNeighbors(draws, 7)
 
-        assertEquals(8, result.above.top.size)
-        assertEquals((11..18).map { it to 1 }, result.above.top)
-        assertEquals((20..27).map { it to 1 }, result.right.top)
+        assertEquals(10, result.above.top.size)
+        assertEquals((11..20).map { it to 1 }, result.above.top)
+        assertEquals((20..29).map { it to 1 }, result.right.top)
         assertEquals((11..17).map { it to 1 }, result.below.top)
     }
 
@@ -197,9 +197,9 @@ class SecureLotteryRandomTest {
     }
 
     @Test
-    fun individualSecondColumnAnalysisReturnsUpToEightNumbersAndBreaksTiesByValue() {
+    fun individualSecondColumnAnalysisReturnsUpToTenNumbersAndBreaksTiesByValue() {
         val draws = mutableListOf<Draw>()
-        for (index in 0 until 8) {
+        for (index in 0 until 10) {
             val day = index * 2 + 1
             draws += Draw(
                 "2026-02-" + day.toString().padStart(2, '0'),
@@ -213,10 +213,10 @@ class SecureLotteryRandomTest {
 
         val result = analyzeSecondColumnNeighbors(draws, 17)
 
-        assertEquals(8, result.above.top.size)
-        assertEquals((18..25).map { it to 1 }, result.above.top)
+        assertEquals(10, result.above.top.size)
+        assertEquals((18..27).map { it to 1 }, result.above.top)
         assertEquals(listOf(4 to 8), result.left.top)
-        assertEquals((20..27).map { it to 1 }, result.right.top)
+        assertEquals((20..29).map { it to 1 }, result.right.top)
         assertEquals((18..24).map { it to 1 }, result.below.top)
     }
 
@@ -303,9 +303,9 @@ class SecureLotteryRandomTest {
     }
 
     @Test
-    fun laterColumnAnalysisShowsAtMostEightResultsAndBreaksFrequencyTiesByValue() {
+    fun laterColumnAnalysisShowsAtMostTenResultsAndBreaksFrequencyTiesByValue() {
         val draws = mutableListOf<Draw>()
-        for (index in 0 until 9) {
+        for (index in 0 until 10) {
             val day = index * 2 + 1
             draws += Draw(
                 "2026-02-" + day.toString().padStart(2, '0'),
@@ -319,10 +319,10 @@ class SecureLotteryRandomTest {
 
         val result = analyzeLaterColumnNeighbors(draws, 3, 22)
 
-        assertEquals(8, result.above.top.size)
-        assertEquals((23..30).map { it to 1 }, result.above.top)
-        assertEquals(listOf(10 to 9), result.left.top)
-        assertEquals(listOf(40 to 9), result.right.top)
+        assertEquals(10, result.above.top.size)
+        assertEquals((23..32).map { it to 1 }, result.above.top)
+        assertEquals(listOf(10 to 10), result.left.top)
+        assertEquals(listOf(40 to 10), result.right.top)
     }
 
     @Test
