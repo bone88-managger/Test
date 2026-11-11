@@ -54,6 +54,7 @@ import java.util.Locale
 private const val WHITE_MIN = 1
 private const val WHITE_MAX = 70
 private const val WHITE_COUNT = 5
+private const val FIRST_COLUMN_ANALYSIS_MAX = 25
 private const val MEGA_MIN = 1
 private const val MEGA_MAX = 24
 private const val MAX_ALLOWED_ATTEMPTS = 250_000
@@ -177,7 +178,8 @@ internal data class IndividualColumnAnalysis(
     val occurrences: Int,
     val above: NeighborFrequency,
     val right: NeighborFrequency,
-    val below: NeighborFrequency
+    val below: NeighborFrequency,
+    val neverAfter: List<Int>
 )
 
 // The history is sorted oldest-to-newest, matching analyzeOfficialDrawHistory.
@@ -228,7 +230,8 @@ internal fun analyzeFirstColumnNeighbors(
         occurrences = occurrences,
         above = summarize(aboveCounts),
         right = summarize(rightCounts),
-        below = summarize(belowCounts)
+        below = summarize(belowCounts),
+        neverAfter = (1..FIRST_COLUMN_ANALYSIS_MAX).filter { it !in aboveCounts }
     )
 }
 
@@ -664,6 +667,12 @@ private fun SimulatorScreen(
                                                 else firstColumnAnalysis.above.top.joinToString(" · ") {
                                                     it.first.toString() + " (" + it.second + ")"
                                                 }
+                                            )
+
+                                            Text("NUNCA SALIERON DESPUÉS · primera columna del sorteo siguiente (1–25)")
+                                            Text(
+                                                if (firstColumnAnalysis.neverAfter.isEmpty()) "Todos los números del 1 al 25 aparecieron al menos una vez."
+                                                else firstColumnAnalysis.neverAfter.joinToString(" · ")
                                             )
 
                                             Text("DERECHA · segunda columna del mismo sorteo")
