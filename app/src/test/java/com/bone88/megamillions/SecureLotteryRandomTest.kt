@@ -52,6 +52,47 @@ class SecureLotteryRandomTest {
     }
 
     @Test
+    fun individualFirstColumnAnalysisCountsAllOccurrencesAndUsesRequestedDirections() {
+        val older = Draw("2026-01-01", listOf(7, 20, 30, 40, 50), 1)
+        val middle = Draw("2026-01-08", listOf(5, 21, 31, 41, 51), 2)
+        val newest = Draw("2026-01-15", listOf(7, 22, 32, 42, 52), 3)
+        val latest = Draw("2026-01-22", listOf(9, 23, 33, 43, 53), 4)
+
+        // Input order is deliberately shuffled. Reference 7 appears in two draws.
+        val result = analyzeFirstColumnNeighbors(listOf(latest, middle, older, newest), 7)
+
+        assertEquals(2, result.occurrences)
+        assertEquals(listOf(5 to 1, 9 to 1), result.above.top)
+        assertEquals(listOf(20 to 1, 22 to 1), result.right.top)
+        assertEquals(listOf(5 to 1), result.below.top)
+        assertEquals(1, result.above.samples)
+        assertEquals(2, result.right.samples)
+        assertEquals(1, result.below.samples)
+    }
+
+    @Test
+    fun individualFirstColumnAnalysisReturnsAtMostFourNumbersAndBreaksTiesByValue() {
+        val draws = listOf(
+            Draw("2026-01-01", listOf(10, 40, 50, 60, 70), 1),
+            Draw("2026-01-02", listOf(7, 20, 30, 40, 50), 2),
+            Draw("2026-01-03", listOf(11, 41, 51, 61, 69), 3),
+            Draw("2026-01-04", listOf(7, 21, 31, 41, 51), 4),
+            Draw("2026-01-05", listOf(12, 42, 52, 62, 68), 5),
+            Draw("2026-01-06", listOf(7, 22, 32, 42, 52), 6),
+            Draw("2026-01-07", listOf(13, 43, 53, 63, 67), 7),
+            Draw("2026-01-08", listOf(7, 23, 33, 43, 53), 8),
+            Draw("2026-01-09", listOf(14, 44, 54, 64, 66), 9)
+        )
+
+        val result = analyzeFirstColumnNeighbors(draws, 7)
+
+        assertEquals(4, result.above.top.size)
+        assertEquals(listOf(11 to 1, 12 to 1, 13 to 1, 14 to 1), result.above.top)
+        assertEquals(listOf(20 to 1, 21 to 1, 22 to 1, 23 to 1), result.right.top)
+        assertEquals(listOf(10 to 1, 11 to 1, 12 to 1, 13 to 1), result.below.top)
+    }
+
+    @Test
     fun importedDrawsMustUseOfficialMegaMillionsRanges() {
         assertTrue(isValidDrawNumbers(listOf(1, 2, 3, 4, 70), 24))
         assertFalse(isValidDrawNumbers(listOf(1, 2, 3, 4, 71), 12))
