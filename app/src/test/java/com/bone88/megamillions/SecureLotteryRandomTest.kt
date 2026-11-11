@@ -52,6 +52,34 @@ class SecureLotteryRandomTest {
     }
 
     @Test
+    fun historicalColumnRangesUseMinimumAndMaximumFromEveryImportedDraw() {
+        val first = Draw("2026-01-01", listOf(3, 12, 24, 35, 46), 1)
+        val middle = Draw("2026-01-08", listOf(1, 18, 21, 39, 52), 2)
+        val newest = Draw("2026-01-15", listOf(25, 14, 30, 31, 70), 3)
+
+        val ranges = analyzeHistoricalColumnRanges(listOf(newest, first, middle))
+
+        assertEquals(
+            listOf(
+                HistoricalColumnRange(1, 1, 25),
+                HistoricalColumnRange(2, 12, 18),
+                HistoricalColumnRange(3, 21, 30),
+                HistoricalColumnRange(4, 31, 39),
+                HistoricalColumnRange(5, 46, 70)
+            ),
+            ranges
+        )
+    }
+
+    @Test
+    fun historicalColumnRangesReportNoDataForEmptyHistory() {
+        val ranges = analyzeHistoricalColumnRanges(emptyList())
+
+        assertEquals(5, ranges.size)
+        assertTrue(ranges.all { it.minimum == null && it.maximum == null })
+    }
+
+    @Test
     fun individualFirstColumnAnalysisCountsAllOccurrencesAndUsesRequestedDirections() {
         val older = Draw("2026-01-01", listOf(7, 20, 30, 40, 50), 1)
         val middle = Draw("2026-01-08", listOf(5, 21, 31, 41, 51), 2)
