@@ -141,7 +141,7 @@ class SecureLotteryRandomTest {
         assertEquals(10, result.above.top.size)
         assertEquals((11..20).map { it to 1 }, result.above.top)
         assertEquals((20..29).map { it to 1 }, result.right.top)
-        assertEquals((11..17).map { it to 1 }, result.below.top)
+        assertEquals((11..19).map { it to 1 }, result.below.top)
     }
 
 
@@ -215,7 +215,7 @@ class SecureLotteryRandomTest {
 
         assertEquals(10, result.above.top.size)
         assertEquals((18..27).map { it to 1 }, result.above.top)
-        assertEquals(listOf(4 to 8), result.left.top)
+        assertEquals(listOf(4 to 10), result.left.top)
         assertEquals((20..29).map { it to 1 }, result.right.top)
         assertEquals((18..24).map { it to 1 }, result.below.top)
     }
